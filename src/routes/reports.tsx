@@ -85,7 +85,7 @@ function Reports() {
         );
         if (!rows.length) setMsg("אין חובות פתוחים");
       } else if (key === "customers") {
-        const rows = await fetchRows("v_customers_unified", { limit: 5000 });
+        const rows = await fetchRows("v_customers_full", { limit: 5000 });
         exportExcel(
           "דוח-לקוחות",
           rows.map((r) => ({
