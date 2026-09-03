@@ -62,7 +62,8 @@ import {
 import { useView, usePrevView } from "@/lib/hooks";
 import { usePrefs } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth";
-import { agoText, greeting, ils, int, timeOf, change, cars, visits } from "@/lib/format";
+import { useRotating } from "@/lib/motion";
+import { agoText, greeting, ils, int, pct, timeOf, change, cars, visits } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -94,6 +95,58 @@ const qtyKeys = ["quantity", "qty", "units", "tquant"];
 const sizeKeys = ["size", "tire_size", "measure"];
 const brandKeys = ["brand", "manufacturer", "maker", "brand_name"];
 
+/**
+ * תובנות חיות לשורה שמתחת לברכה.
+ * כל שורה נבנית ממספר אמיתי שקיים בנתונים — אין משפט בלי גיבוי.
+ */
+function buildInsights(rows: Row[], total: number, prevTotal: number, vat: "net" | "gross") {
+  const out: string[] = [];
+  if (!rows.length) return out;
+
+  const vehicles = uniqueCount(rows, (r) => str(get(r, vehicleKeys)));
+  if (vehicles > 0 && total > 0) {
+    out.push(`${cars(vehicles)} · ממוצע ${ils(total / vehicles)} לרכב`);
+  }
+
+  const delta = change(total, prevTotal);
+  if (delta !== null && Math.abs(delta) >= 1) {
+    out.push(
+      delta >= 0
+        ? `${pct(delta)} מעל התקופה המקבילה`
+        : `${pct(Math.abs(delta))} מתחת לתקופה המקבילה`,
+    );
+  }
+
+  const byHour = new Map<number, number>();
+  for (const r of rows) {
+    const raw = get(r, ["signed_at", "doc_time", "created_at"]);
+    const d = raw ? new Date(str(raw)) : null;
+    if (!d || Number.isNaN(d.getTime())) continue;
+    byHour.set(d.getHours(), (byHour.get(d.getHours()) ?? 0) + amountOf(r, vat));
+  }
+  if (byHour.size > 1) {
+    const [h, v] = [...byHour.entries()].reduce((a, b) => (b[1] > a[1] ? b : a));
+    out.push(`השעה החזקה ${String(h).padStart(2, "0")}:00 · ${ils(v)}`);
+  }
+
+  const heavy = rows.filter(isHeavy).reduce((s, r) => s + amountOf(r, vat), 0);
+  if (heavy > 0 && total > 0) {
+    out.push(`משא כבד מהווה ${Math.round((heavy / total) * 100)}% מההכנסה`);
+  }
+
+  const services = groupSum(
+    rows,
+    (r) => str(r["category"]) || str(r["family_desc"]),
+    (r) => amountOf(r, vat),
+  ).filter((g) => g.key && g.key !== "אחר");
+  if (services[0]) out.push(`${services[0].key} מוביל עם ${ils(services[0].value)}`);
+
+  const biggest = rows.reduce((m, r) => Math.max(m, amountOf(r, vat)), 0);
+  if (biggest > 0) out.push(`העסקה הגדולה בתקופה: ${ils(biggest)}`);
+
+  return out;
+}
+
 /** נוסח אחיד: "עוד לא נרשמו נתונים היום / אתמול / השבוע". */
 function noData(range: TimeKey) {
   return range === "all" ? "עוד לא נרשמו נתונים" : `עוד לא נרשמו נתונים ${TIME_LABELS[range]}`;
@@ -124,6 +177,7 @@ const CLASS_COLORS: Record<string, string> = {
 /* שרשראות הרחבה: אם אין נתונים בטווח, הסקשן מרחיב מעצמו לטווח הבא */
 const FULL_CHAIN: TimeKey[] = ["today", "yesterday", "week", "month", "all"];
 const MONTH_CHAIN: TimeKey[] = ["month", "all"];
+const BRAND_CHAIN: TimeKey[] = ["week", "month", "all"];
 const RECENT_CHAIN: TimeKey[] = ["today", "yesterday", "week"];
 
 /**
@@ -161,6 +215,7 @@ function Home() {
   const servR = useAutoRange("today", FULL_CHAIN);
   const custR = useAutoRange("month", MONTH_CHAIN);
   const sizesR = useAutoRange("month", MONTH_CHAIN);
+  const brandsR = useAutoRange("month", BRAND_CHAIN);
   const recentR = useAutoRange("today", RECENT_CHAIN);
 
   const salesRange = salesR.range;
@@ -175,6 +230,8 @@ function Home() {
   const setTopCustRange = custR.setRange;
   const sizesRange = sizesR.range;
   const setSizesRange = sizesR.setRange;
+  const brandsRange = brandsR.range;
+  const setBrandsRange = brandsR.setRange;
   const recentRange = recentR.range;
   const setRecentRange = recentR.setRange;
 
@@ -185,6 +242,7 @@ function Home() {
   const serv = servR.query;
   const topCustomers = custR.query;
   const sizes = sizesR.query;
+  const brands = brandsR.query;
   const recent = recentR.query;
   const daily = useView("v_daily_summary", null, {
     limit: 14,
@@ -213,9 +271,25 @@ function Home() {
     ? agoText(get(sync.data[0], ["finished_at", "synced_at", "created_at", "updated_at"]))
     : "";
 
+  const insights = useMemo(
+    () => buildInsights(rows, total, prevTotal, vat),
+    [rows, total, prevTotal, vat],
+  );
+  const ticker = useRotating(insights.length ? insights : [lastSync || "מסתנכרן מפריוריטי"], 4500);
+
   return (
     <>
-      <ScreenHeader title={greeting(profile?.full_name)} subtitle={lastSync || undefined}>
+      <ScreenHeader
+        title={greeting(profile?.full_name)}
+        subtitle={
+          <span
+            className="inline-block transition-opacity duration-500"
+            style={{ opacity: ticker.visible ? 1 : 0 }}
+          >
+            {ticker.text}
+          </span>
+        }
+      >
         <div className="space-y-3">
           <TimeFilter
             value={salesRange}
@@ -284,7 +358,7 @@ function Home() {
             </div>
 
             <div className="grid gap-x-8 lg:grid-cols-2">
-              <TopBrands rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
+              <TopBrands rows={brands.data ?? []} range={brandsRange} onRange={setBrandsRange} />
               <TopSizes rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
             </div>
 
