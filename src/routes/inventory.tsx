@@ -141,10 +141,7 @@ function Inventory() {
     () => [...new Set(all.map((r) => str(get(r, famK))).filter(Boolean))],
     [all],
   );
-  const brands = useMemo(
-    () => [...new Set(all.map(brandOf).filter(Boolean))].slice(0, 12),
-    [all],
-  );
+  const brands = useMemo(() => [...new Set(all.map(brandOf).filter(Boolean))].slice(0, 12), [all]);
 
   const rows = useMemo(() => {
     let list = all;
@@ -162,7 +159,7 @@ function Inventory() {
       if (sortBy === "idle") return num(get(b, idleK)) - num(get(a, idleK));
       const fa = fMap.get(itemKey(a));
       const fb = fMap.get(itemKey(b));
-      if (sortBy === "rate") return num(get(fb, rateK)) - num(get(fa, rateK));
+      if (sortBy === "rate") return (fb ? num(get(fb, rateK)) : 0) - (fa ? num(get(fa, rateK)) : 0);
       const da = fa ? num(get(fa, daysK)) : Infinity;
       const db = fb ? num(get(fb, daysK)) : Infinity;
       return (da || Infinity) - (db || Infinity);
@@ -184,7 +181,12 @@ function Inventory() {
   );
 
   const famGroups = useMemo(
-    () => groupSum(all, (r) => str(get(r, famK)) || "ללא משפחה", (r) => num(get(r, balK))),
+    () =>
+      groupSum(
+        all,
+        (r) => str(get(r, famK)) || "ללא משפחה",
+        (r) => num(get(r, balK)),
+      ),
     [all],
   );
 
@@ -467,9 +469,7 @@ function Inventory() {
 
               {hasFilters && (
                 <div className="mb-3.5 flex flex-wrap items-center gap-1.5">
-                  {family && (
-                    <FilterChip label={family} onClear={() => setFamily("")} />
-                  )}
+                  {family && <FilterChip label={family} onClear={() => setFamily("")} />}
                   {brand && <FilterChip label={brand} onClear={() => setBrand("")} />}
                   <button
                     onClick={() => {
@@ -606,9 +606,7 @@ function Inventory() {
                       style={{ background: `rgba(196,43,78,${0.03 + r * 0.11})` }}
                     >
                       <span className="text-[12px] text-red-800">{g.key}</span>
-                      <span className="tnum text-[17px] font-500 text-red-900">
-                        {int(g.value)}
-                      </span>
+                      <span className="tnum text-[17px] font-500 text-red-900">{int(g.value)}</span>
                     </div>
                   );
                 })}
