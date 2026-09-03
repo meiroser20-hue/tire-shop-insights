@@ -142,3 +142,65 @@
     color: var(--color-foreground);
   }
 }
+
+/* ============================ ברכת הדרך — design system ============================ */
+:root {
+  --coral-900:#4A1B0C; --coral-800:#712B13; --coral-700:#993C1D;
+  --coral-600:#D85A30; --coral-500:#E8734A; --coral-400:#F0997B;
+  --coral-200:#F5C4B3; --coral-100:#FAECE7; --coral-050:#FEF6F1;
+  --ink:#17181C; --ink-2:#5A5D66; --ink-3:#9A9DA6;
+  --line:#EDEDF0; --surf:#F7F7F9;
+  --up:#2E7D4F; --down:#C93B3B;
+  --blue-bg:#EAF1FB; --blue-fg:#1B4E8F;
+  --amber-bg:#FDF2DC; --amber-fg:#8A5A0B;
+  --violet-bg:#F1EDFB; --violet-fg:#4F3B96;
+  --teal-bg:#E4F4EE; --teal-fg:#0F6E56;
+
+  --background:#FFFFFF; --foreground:#17181C;
+  --card:#FFFFFF; --card-foreground:#17181C;
+  --muted:#F7F7F9; --muted-foreground:#5A5D66;
+  --primary:#D85A30; --primary-foreground:#FFFFFF;
+  --border:#EDEDF0; --input:#EDEDF0; --ring:#E8734A;
+  --radius:0.875rem;
+}
+
+@theme inline {
+  --color-coral-900: var(--coral-900); --color-coral-800: var(--coral-800);
+  --color-coral-700: var(--coral-700); --color-coral-600: var(--coral-600);
+  --color-coral-500: var(--coral-500); --color-coral-400: var(--coral-400);
+  --color-coral-200: var(--coral-200); --color-coral-100: var(--coral-100);
+  --color-coral-050: var(--coral-050);
+  --color-ink: var(--ink); --color-ink-2: var(--ink-2); --color-ink-3: var(--ink-3);
+  --color-line: var(--line); --color-surf: var(--surf);
+  --color-up: var(--up); --color-down: var(--down);
+  --font-sans: Heebo, system-ui, sans-serif;
+}
+
+@layer base {
+  html { direction: rtl; }
+  body {
+    font-family: Heebo, system-ui, sans-serif;
+    font-weight: 400;
+    color: var(--ink);
+    background: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4 { font-weight: 600; letter-spacing: -0.01em; }
+}
+
+@utility tnum { font-variant-numeric: tabular-nums; }
+
+@utility head-grad {
+  background: linear-gradient(180deg,
+    #FF9A78 0%, #FFA98A 14%, #FFBC9F 30%, #FDD0B8 46%,
+    #FCE2D2 62%, #FDEEE6 78%, #FEF8F4 90%, #FFFFFF 100%);
+}
+
+@utility coral-grad {
+  background: linear-gradient(180deg, var(--coral-500) 0%, var(--coral-600) 100%);
+}
+
+@utility hairline { border-top: 1px solid var(--line); }
+
+.skel { background: linear-gradient(90deg,#F1F1F4 25%,#E7E7EC 50%,#F1F1F4 75%); background-size:200% 100%; animation: skel 1.4s ease-in-out infinite; border-radius: 8px; }
+@keyframes skel { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
