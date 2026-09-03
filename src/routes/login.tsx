@@ -6,6 +6,10 @@ import { useAuth } from "@/lib/auth";
 import { useRotating } from "@/lib/motion";
 import bg from "@/assets/login-bg.jpg.asset.json";
 
+/* הלוגו מתארח כרגע באתר הוורדפרס. אם מעלים אותו כ-asset ב-Lovable —
+   להחליף את הקבוע הזה ב-import logo from "@/assets/logo.png.asset.json" ואז logo.url */
+const LOGO_URL = "https://birkat-haderech.co.il/wp-content/uploads/2026/04/cropped-1.png";
+
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
@@ -29,15 +33,18 @@ const LINES = [
 ];
 
 const field =
-  "h-[52px] w-full rounded-[14px] px-4 text-[15.5px] text-white outline-none transition-colors placeholder:text-white/45 focus:border-white/40";
-const fieldStyle = {
-  background: "rgba(255,255,255,.12)",
-  border: "1px solid rgba(255,255,255,.2)",
+  "h-[50px] w-full rounded-full bg-transparent px-5 text-[15px] text-ink outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-[rgba(107,23,48,.6)]";
+
+const fieldStyle = { border: "1px solid rgba(147,32,64,.45)" };
+const fieldFocus = {
+  border: "1px solid rgba(196,43,78,.9)",
+  boxShadow: "0 0 0 3px rgba(196,43,78,.10)",
 };
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [focus, setFocus] = useState<"email" | "password" | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
@@ -62,7 +69,7 @@ function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center px-5">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-12">
       <img
         src={bg.url}
         alt=""
@@ -70,79 +77,101 @@ function Login() {
         className="absolute inset-0 size-full object-cover"
         loading="eager"
       />
+      {/* צעיף בהיר — משאיר את התמונה נראית במקום להכהות אותה */}
       <div
         className="absolute inset-0"
         style={{
-          background: "linear-gradient(180deg, rgba(74,14,31,.55) 0%, rgba(74,14,31,.72) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,.10) 42%, rgba(74,14,31,.22) 100%)",
         }}
       />
 
-      <div
-        className="relative w-full max-w-[380px] px-8 py-10"
-        style={{
-          background: "rgba(255,255,255,.14)",
-          backdropFilter: "blur(28px) saturate(160%)",
-          border: "1px solid rgba(255,255,255,.22)",
-          borderRadius: 26,
-          boxShadow: "0 24px 60px rgba(0,0,0,.28)",
-        }}
-      >
-        <div className="flex flex-col items-center">
-          <div
-            className="flex size-16 items-center justify-center rounded-full text-[17px] font-600 text-white"
-            style={{ background: "linear-gradient(135deg,#6B1730 0%,#C42B4E 55%,#E03E5F 100%)" }}
-          >
-            ב״ד
-          </div>
-          <h1 className="mt-4 text-[22px] font-500 text-white">פנצ'ריית ברכת הדרך</h1>
-          <p
-            className="mt-1.5 h-[19px] text-[13px] transition-opacity duration-500"
-            style={{ color: "rgba(255,255,255,.72)", opacity: line.visible ? 1 : 0 }}
-          >
-            {line.text}
-          </p>
+      <div className="relative w-full max-w-[400px]">
+        {/* עיגול הלוגו — יושב על שפת הכרטיס */}
+        <div
+          className="absolute left-1/2 top-0 z-10 flex size-[92px] -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full"
+          style={{
+            background: "linear-gradient(160deg,#26272B 0%,#141518 100%)",
+            border: "3px solid rgba(255,255,255,.92)",
+            boxShadow: "0 12px 30px rgba(20,21,24,.30)",
+          }}
+        >
+          <img
+            src={LOGO_URL}
+            alt="ברכת הדרך"
+            className="size-full object-contain p-3"
+            loading="eager"
+          />
         </div>
 
-        <form onSubmit={submit} className="mt-8 space-y-3">
-          <input
-            type="email"
-            required
-            dir="ltr"
-            placeholder="אימייל"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={field}
-            style={fieldStyle}
-          />
-          <input
-            type="password"
-            required
-            placeholder="סיסמה"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={field}
-            style={fieldStyle}
-          />
+        <div
+          className="px-8 pb-7 pt-16"
+          style={{
+            background: "rgba(255,255,255,.70)",
+            backdropFilter: "blur(26px) saturate(150%)",
+            WebkitBackdropFilter: "blur(26px) saturate(150%)",
+            border: "1px solid rgba(255,255,255,.85)",
+            borderRadius: 30,
+            boxShadow: "0 24px 70px rgba(74,14,31,.18)",
+          }}
+        >
+          <div className="text-center">
+            <h1 className="text-[21px] font-600 text-ink">פנצ'ריית ברכת הדרך</h1>
+            <p
+              className="mx-auto mt-1.5 h-[19px] text-[13px] text-ink-2 transition-opacity duration-500"
+              style={{ opacity: line.visible ? 1 : 0 }}
+            >
+              {line.text}
+            </p>
+          </div>
 
-          {error && <p className="text-[12.5px] text-white">{error}</p>}
+          <form onSubmit={submit} className="mt-7 space-y-3">
+            <input
+              type="email"
+              required
+              placeholder="שם משתמש"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setFocus("email")}
+              onBlur={() => setFocus(null)}
+              className={field}
+              style={focus === "email" ? fieldFocus : fieldStyle}
+            />
+            <input
+              type="password"
+              required
+              placeholder="סיסמה"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setFocus("password")}
+              onBlur={() => setFocus(null)}
+              className={field}
+              style={focus === "password" ? fieldFocus : fieldStyle}
+            />
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="tap h-[52px] w-full rounded-[14px] text-[15.5px] font-500 text-white disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg,#6B1730 0%,#C42B4E 55%,#E03E5F 100%)" }}
+            {error && <p className="pt-0.5 text-[12.5px] text-red-700">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="tap mt-1 h-[50px] w-full rounded-full text-[15.5px] font-500 text-white disabled:opacity-60"
+              style={{
+                background: "linear-gradient(135deg,#6B1730 0%,#C42B4E 55%,#E03E5F 100%)",
+                boxShadow: "0 10px 24px rgba(196,43,78,.28)",
+              }}
+            >
+              {busy ? "רגע..." : "כניסה"}
+            </button>
+          </form>
+
+          <div
+            className="mt-6 flex items-center justify-center gap-1.5 pt-4 text-[10.5px] text-ink-3"
+            style={{ borderTop: "1px solid rgba(23,24,28,.08)" }}
           >
-            {busy ? "רגע..." : "כניסה"}
-          </button>
-        </form>
-      </div>
-
-      <div
-        className="absolute inset-x-0 bottom-5 flex items-center justify-center gap-1.5 text-[11px]"
-        style={{ color: "rgba(255,255,255,.4)" }}
-      >
-        <IconLock size={12} stroke={1.5} />
-        החיבור מוצפן ומאובטח · ברכת הדרך © 2026
+            <IconLock size={12} stroke={1.5} />
+            החיבור מוצפן ומאובטח · ברכת הדרך © 2026
+          </div>
+        </div>
       </div>
     </div>
   );
