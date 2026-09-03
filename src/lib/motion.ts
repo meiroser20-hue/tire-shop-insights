@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
-const EASE = (t: number) => {
-  // cubic-bezier(.22,1,.36,1) approximation
-  return 1 - Math.pow(1 - t, 3);
-};
+const EASE = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /** Counts from the previous value to the new one with requestAnimationFrame. */
-export function useCountUp(value: number, duration = 450) {
+export function useCountUp(value: number, duration = 480) {
   const [display, setDisplay] = useState(value);
   const from = useRef(value);
   const raf = useRef<number | null>(null);
@@ -16,12 +13,13 @@ export function useCountUp(value: number, duration = 450) {
       setDisplay(value);
       return;
     }
-    const start = performance.now();
+    let start: number | undefined;
     const a = from.current;
     const b = value;
     if (a === b) return;
 
     const tick = (now: number) => {
+      start ??= now;
       const t = Math.min(1, (now - start) / duration);
       const v = a + (b - a) * EASE(t);
       setDisplay(v);

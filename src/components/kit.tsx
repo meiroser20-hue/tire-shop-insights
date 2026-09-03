@@ -50,8 +50,8 @@ export function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-[12.5px] transition-[transform,background-color,color] duration-[180ms] active:scale-[.96] ${
-        active ? "text-white" : "border border-line bg-white/70 text-ink-2 hover:bg-red-050"
+      className={`shrink-0 rounded-full px-3 py-1 text-[10.5px] transition-[transform,background-color,color] duration-[180ms] active:scale-[.96] ${
+        active ? "text-white" : "bg-[#F4F4F6] text-ink-2 hover:bg-red-050"
       }`}
       style={active ? { background: RED_GRAD } : undefined}
     >
@@ -97,7 +97,7 @@ export function Segmented<T extends string>({
           type="button"
           onClick={() => onChange(o.value)}
           className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition-[transform,background-color] duration-[180ms] active:scale-[.96] ${
-            value === o.value ? "bg-red-100 font-500 text-red-700" : "text-ink-2"
+            value === o.value ? "red-grad font-500 text-white" : "text-ink-2"
           }`}
         >
           {o.label}
@@ -164,6 +164,7 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
 /* ---------------------------------- bits --------------------------------- */
 
 export function Delta({ value, small }: { value: number | null; small?: boolean }) {
+  const animated = useCountUp(value ?? 0);
   if (value === null || !Number.isFinite(value)) return null;
   const up = value >= 0;
   return (
@@ -172,7 +173,7 @@ export function Delta({ value, small }: { value: number | null; small?: boolean 
         up ? "text-up" : "text-down"
       } ${small ? "" : up ? "bg-[#E4F4EE]" : "bg-[#FBE9E9]"}`}
     >
-      {up ? "▲" : "▼"} {pct(Math.abs(value) * (up ? 1 : -1)).replace("-", "")}
+      {up ? "▲" : "▼"} {pct(Math.abs(animated) * (up ? 1 : -1)).replace("-", "")}
     </span>
   );
 }
@@ -185,6 +186,8 @@ export function GlassMetric({
   delta,
   color = "var(--red-600)",
   Icon,
+  numericValue,
+  format = "money",
 }: {
   label: string;
   value: string;
@@ -192,7 +195,10 @@ export function GlassMetric({
   delta?: number | null;
   color?: string;
   Icon?: (p: { size?: number; stroke?: number; className?: string }) => ReactNode;
+  numericValue?: number;
+  format?: "money" | "int";
 }) {
+  const animated = useCountUp(numericValue ?? 0);
   return (
     <div
       className="tap relative overflow-hidden rounded-[16px] border border-white/60 px-3.5 py-3"
@@ -210,7 +216,9 @@ export function GlassMetric({
       )}
       <div className="pr-1.5">
         <div className="text-[11px] text-ink-3">{label}</div>
-        <div className="tnum mt-1 text-[23px] font-500 leading-tight text-ink">{value}</div>
+        <div className="tnum mt-1 text-[23px] font-500 leading-tight text-ink">
+          {numericValue === undefined ? value : format === "money" ? ils(animated) : int(animated)}
+        </div>
         <div className="mt-0.5 flex items-center gap-2 text-[10.5px] text-ink-3">
           {sub && <span className="tnum">{sub}</span>}
           <Delta value={delta ?? null} small />
@@ -245,6 +253,7 @@ export function Bar({ value, max, color }: { value: number; max: number; color?:
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-surf">
       <div
+        title={ils(value)}
         className="h-full rounded-full transition-[width] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
         style={{ width: `${w}%`, background: color ?? "var(--red-500)" }}
       />
@@ -310,6 +319,7 @@ export function ColorCard({
   bg,
   fg,
   className = "",
+  numericValue,
 }: {
   label: string;
   value: string;
@@ -317,14 +327,18 @@ export function ColorCard({
   bg: string;
   fg: string;
   className?: string;
+  numericValue?: number;
 }) {
+  const animated = useCountUp(numericValue ?? 0);
   return (
     <div
       className={`tap rounded-[16px] px-3.5 py-3 ${className}`}
       style={{ background: bg, color: fg }}
     >
       <div className="text-[11px] opacity-80">{label}</div>
-      <div className="tnum mt-1 text-[21px] font-500">{value}</div>
+      <div className="tnum mt-1 text-[21px] font-500">
+        {numericValue === undefined ? value : ils(animated)}
+      </div>
       {sub && <div className="tnum mt-0.5 text-[10.5px] opacity-70">{sub}</div>}
     </div>
   );
@@ -355,6 +369,7 @@ export function Sparkline({
   const last = coords[coords.length - 1]?.split(",") ?? ["0", "0"];
   return (
     <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" className="h-11 w-full">
+      <title>{`מגמה: ${points.map((point) => ils(point)).join(" · ")}`}</title>
       <polyline
         points={coords.join(" ")}
         fill="none"
@@ -396,6 +411,7 @@ export function ColumnChart({
               </>
             )}
             <div
+              title={`${labelOf ? labelOf(k) : String(k)} · ${valueFmt?.(v) ?? int(v)}`}
               className="w-full rounded-t-[6px] transition-[height] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
               style={{
                 height: `${Math.max(4, ratio * 82)}px`,
@@ -415,11 +431,14 @@ export function Donut({
   slices,
   center,
   sub,
+  numericCenter,
 }: {
   slices: Array<{ key: string; value: number; color: string }>;
   center: string;
   sub?: string;
+  numericCenter?: number;
 }) {
+  const animatedCenter = useCountUp(numericCenter ?? 0);
   const total = slices.reduce((s, x) => s + x.value, 0);
   if (!total) return null;
   let acc = 0;
@@ -432,11 +451,17 @@ export function Donut({
     .join(", ");
   return (
     <div
-      className="relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
+      key={stops}
+      title={slices
+        .map((slice) => `${slice.key}: ${Math.round((slice.value / total) * 100)}%`)
+        .join(" · ")}
+      className="donut-turn relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
       style={{ background: `conic-gradient(${stops})` }}
     >
       <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-white">
-        <span className="tnum text-[14px] font-500 text-ink">{center}</span>
+        <span className="tnum text-[14px] font-500 text-ink">
+          {numericCenter === undefined ? center : ils(animatedCenter)}
+        </span>
         {sub && <span className="tnum text-[10px] text-ink-3">{sub}</span>}
       </div>
     </div>
@@ -454,25 +479,48 @@ export function RankedList({
   return (
     <div className="space-y-3">
       {items.map((it, i) => (
-        <div key={it.key} className="flex items-center gap-3">
-          <span
-            className="tnum flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-500 text-white"
-            style={{ background: medals[i] ?? "var(--ink-3)" }}
-          >
-            {i + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-[14px] text-ink">{it.label}</span>
-              <span className="tnum shrink-0 text-[13px] text-ink-2">{it.valueText}</span>
-            </div>
-            <div className="mt-1.5">
-              <Bar value={it.value} max={max} />
-            </div>
-            {it.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{it.sub}</div>}
-          </div>
-        </div>
+        <RankedItem
+          key={it.key}
+          item={it}
+          index={i}
+          max={max}
+          medal={medals[i] ?? "var(--ink-3)"}
+        />
       ))}
+    </div>
+  );
+}
+
+function RankedItem({
+  item,
+  index,
+  max,
+  medal,
+}: {
+  item: { key: string; label: ReactNode; value: number; valueText: string; sub?: string };
+  index: number;
+  max: number;
+  medal: string;
+}) {
+  const animated = useCountUp(item.value);
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="tnum flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-500 text-white"
+        style={{ background: medal ?? "var(--ink-3)" }}
+      >
+        {index + 1}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[14px] text-ink">{item.label}</span>
+          <span className="tnum shrink-0 text-[13px] text-ink-2">{ils(animated)}</span>
+        </div>
+        <div className="mt-1.5">
+          <Bar value={item.value} max={max} />
+        </div>
+        {item.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{item.sub}</div>}
+      </div>
     </div>
   );
 }
@@ -511,25 +559,54 @@ export function VolumeChips({
 export function Timeline({
   items,
 }: {
-  items: Array<{ key: string; time: string; title: ReactNode; sub?: ReactNode; value?: string }>;
+  items: Array<{
+    key: string;
+    time: string;
+    title: ReactNode;
+    sub?: ReactNode;
+    value?: string;
+    numericValue?: number;
+  }>;
 }) {
   return (
     <div className="relative pr-4">
       <span className="absolute bottom-2 right-[5px] top-2 w-px bg-line" />
       <div className="space-y-4">
         {items.map((it) => (
-          <div key={it.key} className="relative">
-            <span className="absolute -right-4 top-1.5 size-[11px] rounded-full border-2 border-white bg-red-500" />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="tnum text-[10.5px] text-ink-3">{it.time}</div>
-                <div className="mt-0.5 truncate text-[14px] text-ink">{it.title}</div>
-                {it.sub && <div className="mt-0.5 text-[11px] text-ink-3">{it.sub}</div>}
-              </div>
-              {it.value && <span className="tnum text-[14px] text-ink">{it.value}</span>}
-            </div>
-          </div>
+          <TimelineItem key={it.key} item={it} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function TimelineItem({
+  item,
+}: {
+  item: {
+    key: string;
+    time: string;
+    title: ReactNode;
+    sub?: ReactNode;
+    value?: string;
+    numericValue?: number;
+  };
+}) {
+  const animated = useCountUp(item.numericValue ?? 0);
+  return (
+    <div className="relative">
+      <span className="absolute -right-4 top-1.5 size-[11px] rounded-full border-2 border-white bg-red-500" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="tnum text-[10.5px] text-ink-3">{item.time}</div>
+          <div className="mt-0.5 truncate text-[14px] text-ink">{item.title}</div>
+          {item.sub && <div className="mt-0.5 text-[11px] text-ink-3">{item.sub}</div>}
+        </div>
+        {item.value && (
+          <span className="tnum text-[14px] text-ink">
+            {item.numericValue === undefined ? item.value : ils(animated)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -550,6 +627,7 @@ export function Gauge({
   color?: string;
 }) {
   const ratio = max > 0 ? Math.min(1, value / max) : 0;
+  const animatedValue = useCountUp(value);
   const r = 34;
   const c = Math.PI * r;
   return (
@@ -573,7 +651,9 @@ export function Gauge({
           style={{ transition: "stroke-dashoffset 400ms cubic-bezier(.22,1,.36,1)" }}
         />
       </svg>
-      <div className="tnum -mt-2 text-[19px] font-500 text-ink">{valueText}</div>
+      <div className="tnum -mt-2 text-[19px] font-500 text-ink">
+        {valueText === int(value) ? int(animatedValue) : valueText}
+      </div>
       <div className="mt-0.5 text-center text-[11px] text-ink-3">{label}</div>
     </div>
   );

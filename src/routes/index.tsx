@@ -94,10 +94,20 @@ const CLASS_COLORS: Record<string, string> = {
 function Home() {
   const { profile } = useAuth();
   const { vat, setVat } = usePrefs();
-  const [time, setTime] = useState<TimeKey>("today");
+  const [salesRange, setSalesRange] = useState<TimeKey>("today");
+  const [hoursRange, setHoursRange] = useState<TimeKey>("today");
+  const [mixRange, setMixRange] = useState<TimeKey>("today");
+  const [topCustRange, setTopCustRange] = useState<TimeKey>("month");
+  const [sizesRange, setSizesRange] = useState<TimeKey>("month");
+  const [recentRange, setRecentRange] = useState<TimeKey>("today");
 
-  const sales = useView("v_sales", time, { limit: 5000 });
-  const prev = usePrevView("v_sales", time);
+  const sales = useView("v_sales", salesRange, { limit: 5000 });
+  const prev = usePrevView("v_sales", salesRange);
+  const hours = useView("v_sales", hoursRange, { limit: 5000 });
+  const mix = useView("v_sales", mixRange, { limit: 5000 });
+  const topCustomers = useView("v_sales", topCustRange, { limit: 5000 });
+  const sizes = useView("v_sales", sizesRange, { limit: 5000 });
+  const recent = useView("v_sales", recentRange, { limit: 5000 });
   const daily = useView("v_daily_summary", null, {
     limit: 14,
     order: { key: ["doc_date"] },
@@ -129,7 +139,11 @@ function Home() {
     <>
       <ScreenHeader title={greeting(profile?.full_name)} subtitle={lastSync || undefined}>
         <div className="space-y-3">
-          <TimeFilter value={time} onChange={setTime} />
+          <TimeFilter
+            value={salesRange}
+            onChange={setSalesRange}
+            options={["today", "yesterday", "week", "month"]}
+          />
           <div className="flex justify-center">
             <Segmented
               value={vat}
@@ -147,7 +161,7 @@ function Home() {
             <Skeleton className="mx-auto h-12 w-48" />
           ) : (
             <>
-              <div className="tnum text-[50px] font-500 leading-none text-red-900">
+              <div className="hero-number tnum leading-none">
                 <AnimatedMoney value={total} />
               </div>
               <div className="mt-2">
@@ -177,24 +191,30 @@ function Home() {
           <div className="py-6">
             <EmptyState
               text="עוד לא נרשמו רכבים היום"
-              action={<Pill onClick={() => setTime("yesterday")}>הצג את אתמול</Pill>}
+              action={<Pill onClick={() => setSalesRange("yesterday")}>הצג את אתמול</Pill>}
             />
           </div>
         ) : (
-          <>
+          <div className="dashboard-grid">
             <Metrics rows={rows} prevRows={prev.data ?? []} />
-            <HourlySection rows={rows} />
-            <ClassSplit rows={rows} />
-            <ServiceMix rows={rows} />
-            <TopCustomers />
-            <TopSizes rows={rows} />
-            <RecentVehicles rows={rows} />
-          </>
+            <HourlySection rows={hours.data ?? []} range={hoursRange} onRange={setHoursRange} />
+            <ClassSplit rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
+            <ServiceMix rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
+            <TopCustomers
+              rows={topCustomers.data ?? []}
+              range={topCustRange}
+              onRange={setTopCustRange}
+            />
+            <TopSizes rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
+            <RecentVehicles rows={recent.data ?? []} range={recentRange} onRange={setRecentRange} />
+          </div>
         )}
 
-        <FinanceStrip />
-        <StockStrip />
-        <Insights />
+        <div className="dashboard-grid">
+          <FinanceStrip />
+          <StockStrip />
+          <Insights />
+        </div>
         <div className="hairline flex items-center justify-center gap-1.5 py-6 text-[11px] text-ink-3">
           <IconRefresh size={13} stroke={1.5} />
           {lastSync || "מסתנכרן מפריוריטי כל 3 דקות"}
@@ -228,6 +248,7 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <GlassMetric
           label="משא כבד"
           value={ils(sum(heavy))}
+          numericValue={sum(heavy)}
           sub={cars(veh(heavy))}
           delta={change(sum(heavy), sum(prevRows.filter(isHeavy)))}
           color="var(--v-heavy)"
@@ -236,6 +257,7 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <GlassMetric
           label="רכב פרטי"
           value={ils(sum(priv))}
+          numericValue={sum(priv)}
           sub={cars(veh(priv))}
           delta={change(sum(priv), sum(prevRows.filter(isPrivate)))}
           color="var(--v-private)"
@@ -244,6 +266,7 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <GlassMetric
           label="ממוצע לרכב"
           value={ils(vehicles ? sum(rows) / vehicles : 0)}
+          numericValue={vehicles ? sum(rows) / vehicles : 0}
           sub={cars(vehicles)}
           color="var(--v-commercial)"
           Icon={IconChartBar}
@@ -251,6 +274,8 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <GlassMetric
           label="צמיגים נמכרו"
           value={int(catQty("צמיג"))}
+          numericValue={catQty("צמיג")}
+          format="int"
           sub="יחידות"
           color="var(--s-tire)"
           Icon={IconCircleDot}
@@ -258,6 +283,8 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <GlassMetric
           label="תקרים תוקנו"
           value={int(catQty("תקר"))}
+          numericValue={catQty("תקר")}
+          format="int"
           sub="יחידות"
           color="var(--s-punc)"
           Icon={IconTool}
@@ -265,6 +292,8 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <GlassMetric
           label="איזונים"
           value={int(catQty("איזון"))}
+          numericValue={catQty("איזון")}
+          format="int"
           sub="יחידות"
           color="var(--s-balance)"
           Icon={IconScale}
@@ -276,7 +305,21 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
 
 /* -------------------------------- hourly -------------------------------- */
 
-function HourlySection({ rows }: { rows: Row[] }) {
+type RangeProps = { range: TimeKey; onRange: (range: TimeKey) => void };
+
+function RangePicker({ range, onRange }: RangeProps) {
+  return (
+    <div className="mb-4">
+      <TimeFilter
+        value={range}
+        onChange={onRange}
+        options={["today", "yesterday", "week", "month"]}
+      />
+    </div>
+  );
+}
+
+function HourlySection({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
   const data = useMemo(() => {
     const m = new Map<number, number>();
@@ -297,6 +340,7 @@ function HourlySection({ rows }: { rows: Row[] }) {
 
   return (
     <Section title="תנועה לפי שעה">
+      <RangePicker range={range} onRange={onRange} />
       <ColumnChart data={data} valueFmt={(v) => ils(v)} />
       <p className="tnum mt-2 text-[11px] text-ink-3">
         שעת השיא {String(peak[0]).padStart(2, "0")}:00 · {String(quiet[0]).padStart(2, "0")}:00 שקטה
@@ -307,7 +351,7 @@ function HourlySection({ rows }: { rows: Row[] }) {
 
 /* ------------------------------ class split ----------------------------- */
 
-function ClassSplit({ rows }: { rows: Row[] }) {
+function ClassSplit({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
   const groups = useMemo(
     () =>
@@ -334,10 +378,12 @@ function ClassSplit({ rows }: { rows: Row[] }) {
 
   return (
     <Section title="כבד מול פרטי">
+      <RangePicker range={range} onRange={onRange} />
       <div className="flex items-center gap-5">
         <Donut
           slices={top.map((g, i) => ({ key: g.key, value: g.value, color: colorOf(g.key, i) }))}
           center={ils(total)}
+          numericCenter={total}
           sub={cars(vehicles)}
         />
         <div className="min-w-0 flex-1 space-y-2">
@@ -348,7 +394,9 @@ function ClassSplit({ rows }: { rows: Row[] }) {
                 style={{ background: colorOf(g.key, i) }}
               />
               <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
-              <span className="tnum text-ink-3">{Math.round((g.value / total) * 100)}%</span>
+              <span className="tnum text-ink-3">
+                <AnimatedInt value={(g.value / total) * 100} />%
+              </span>
               <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
             </div>
           ))}
@@ -360,7 +408,7 @@ function ClassSplit({ rows }: { rows: Row[] }) {
 
 /* ----------------------------- service mix ------------------------------ */
 
-function ServiceMix({ rows }: { rows: Row[] }) {
+function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
   const groups = useMemo(
     () =>
@@ -383,12 +431,13 @@ function ServiceMix({ rows }: { rows: Row[] }) {
 
   return (
     <Section title="מה נמכר">
+      <RangePicker range={range} onRange={onRange} />
       <div className="space-y-2.5">
         {groups.map((g, i) => (
           <div key={g.key}>
             <div className="mb-1 flex items-center justify-between text-[12.5px]">
               <span className="text-ink">{g.key}</span>
-              <span className="tnum text-ink-2">{ils(g.value)}</span>
+              <AnimatedMoney value={g.value} className="text-ink-2" />
             </div>
             <Bar value={g.value} max={max} color={tones[i % tones.length] ?? "var(--red-500)"} />
           </div>
@@ -400,38 +449,41 @@ function ServiceMix({ rows }: { rows: Row[] }) {
 
 /* ---------------------------- top customers ----------------------------- */
 
-function TopCustomers() {
+function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
-  const q = useView("v_customers_unified", null, { limit: 500 });
   const top = useMemo(() => {
-    const rows = q.data ?? [];
-    return [...rows].sort((a, b) => amountOf(b, vat) - amountOf(a, vat)).slice(0, 3);
-  }, [q.data, vat]);
-
-  if (q.isLoading)
-    return (
-      <Section title="לקוחות מובילים">
-        <SkeletonBlock rows={3} />
-      </Section>
-    );
+    const grouped = new Map<
+      string,
+      { value: number; visits: Set<string>; vehicles: Set<string> }
+    >();
+    for (const row of rows) {
+      const name = customerName(row);
+      const item = grouped.get(name) ?? {
+        value: 0,
+        visits: new Set<string>(),
+        vehicles: new Set<string>(),
+      };
+      item.value += amountOf(row, vat);
+      item.visits.add(str(get(row, ["doc_no", "document_no"])) || String(item.visits.size));
+      const vehicle = str(get(row, vehicleKeys));
+      if (vehicle) item.vehicles.add(vehicle);
+      grouped.set(name, item);
+    }
+    return [...grouped.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 3);
+  }, [rows, vat]);
   if (!top.length) return null;
 
   return (
     <Section title="לקוחות מובילים">
+      <RangePicker range={range} onRange={onRange} />
       <RankedList
-        items={top.map((c, i) => {
-          const life = num(get(c, ["lifetime_net", "lifetime_gross", "lifetime", "total_net"]));
-          const value = life || amountOf(c, vat);
-          return {
-            key: `${i}`,
-            label: customerName(c),
-            value,
-            valueText: ils(value),
-            sub: `${visits(num(get(c, ["visits", "visit_count"])))} · ${cars(
-              num(get(c, ["vehicles", "vehicle_count"])),
-            )}`,
-          };
-        })}
+        items={top.map(([name, item], i) => ({
+          key: `${name}-${i}`,
+          label: name,
+          value: item.value,
+          valueText: ils(item.value),
+          sub: `${visits(item.visits.size)} · ${cars(item.vehicles.size)}`,
+        }))}
       />
     </Section>
   );
@@ -439,7 +491,7 @@ function TopCustomers() {
 
 /* ------------------------------- top sizes ------------------------------ */
 
-function TopSizes({ rows }: { rows: Row[] }) {
+function TopSizes({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
   const sizes = useMemo(
     () =>
@@ -453,6 +505,7 @@ function TopSizes({ rows }: { rows: Row[] }) {
   if (!sizes.length) return null;
   return (
     <Section title="מידות מובילות">
+      <RangePicker range={range} onRange={onRange} />
       <VolumeChips
         items={sizes.map((s) => ({
           key: s.key,
@@ -466,7 +519,7 @@ function TopSizes({ rows }: { rows: Row[] }) {
 
 /* ---------------------------- recent vehicles --------------------------- */
 
-function RecentVehicles({ rows }: { rows: Row[] }) {
+function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
   const recent = rows.slice(0, 8);
   const counts = useMemo(() => {
@@ -480,6 +533,7 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
 
   return (
     <Section title="רכבים אחרונים">
+      <RangePicker range={range} onRange={onRange} />
       <Timeline
         items={recent.map((r, i) => {
           const name = customerName(r);
@@ -505,6 +559,7 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
               </span>
             ),
             value: ils(amountOf(r, vat)),
+            numericValue: amountOf(r, vat),
           };
         })}
       />
@@ -515,6 +570,7 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
 /* -------------------------------- finance ------------------------------- */
 
 function FinanceStrip() {
+  const [financeRange, setFinanceRange] = useState<TimeKey>("today");
   const q = useView("customer_obligo", null, { limit: 2000 });
   if (q.isLoading)
     return (
@@ -534,19 +590,34 @@ function FinanceStrip() {
 
   return (
     <Section title="כספים">
+      <RangePicker range={financeRange} onRange={setFinanceRange} />
       <div className="grid grid-cols-3 gap-2.5">
         <ColorCard
           label="חייבים לי"
           value={ils(openSum)}
+          numericValue={openSum}
           bg="var(--teal-bg)"
           fg="var(--teal-fg)"
           className="col-span-2 row-span-2 flex flex-col justify-center"
         />
-        <ColorCard label="בפיגור" value={ils(overdue)} bg="#FCE8ED" fg="var(--red-700)" />
-        <ColorCard label="עד 30 יום" value={ils(soon)} bg="var(--amber-bg)" fg="var(--amber-fg)" />
+        <ColorCard
+          label="בפיגור"
+          value={ils(overdue)}
+          numericValue={overdue}
+          bg="var(--red-100)"
+          fg="var(--red-700)"
+        />
+        <ColorCard
+          label="עד 30 יום"
+          value={ils(soon)}
+          numericValue={soon}
+          bg="var(--amber-bg)"
+          fg="var(--amber-fg)"
+        />
         <ColorCard
           label="עתידי"
           value={ils(future)}
+          numericValue={future}
           bg="var(--blue-bg)"
           fg="var(--blue-fg)"
           className="col-span-3"
