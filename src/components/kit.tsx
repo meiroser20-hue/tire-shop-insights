@@ -24,9 +24,9 @@ export function Section({
   return (
     <section className={first ? "py-4" : "py-5"}>
       {(title || action) && (
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           {title && (
-            <h2 className="flex items-center gap-2.5 text-[15.5px] font-600 text-ink">
+            <h2 className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-[15.5px] font-600 text-ink">
               {icon && <span className="section-rule">{icon}</span>}
               {title}
             </h2>
@@ -180,7 +180,7 @@ export function Delta({ value, small }: { value: number | null; small?: boolean 
   );
 }
 
-/** Glass metric tile with a color edge and a faded icon. */
+/** Clean metric tile. */
 export function GlassMetric({
   label,
   value,
@@ -201,30 +201,17 @@ export function GlassMetric({
   format?: "money" | "int";
 }) {
   const animated = useCountUp(numericValue ?? 0);
+  void color;
+  void Icon;
   return (
-    <div
-      className="tap relative overflow-hidden rounded-[16px] border border-white/60 px-3.5 py-3"
-      style={{
-        background: "rgba(255,255,255,.62)",
-        backdropFilter: "blur(14px) saturate(140%)",
-        boxShadow: "0 6px 20px rgba(74,14,31,.06)",
-      }}
-    >
-      <span className="absolute inset-y-0 right-0 w-[3px]" style={{ background: color }} />
-      {Icon && (
-        <span className="pointer-events-none absolute -left-1 bottom-0 opacity-[.07]">
-          <Icon size={58} stroke={1.5} />
-        </span>
-      )}
-      <div className="pr-1.5">
-        <div className="text-[11px] text-ink-3">{label}</div>
-        <div className="tnum mt-1 text-[23px] font-500 leading-tight text-ink">
-          {numericValue === undefined ? value : format === "money" ? ils(animated) : int(animated)}
-        </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[10.5px] text-ink-3">
-          {sub && <span className="tnum">{sub}</span>}
-          <Delta value={delta ?? null} small />
-        </div>
+    <div className="tap rounded-[16px] border border-line bg-white px-3.5 py-3">
+      <div className="text-[10.5px] text-ink-3">{label}</div>
+      <div className="tnum mt-1.5 text-[23px] font-500 leading-none text-ink">
+        {numericValue === undefined ? value : format === "money" ? ils(animated) : int(animated)}
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-[10.5px] text-ink-3">
+        {sub && <span className="tnum">{sub}</span>}
+        <Delta value={delta ?? null} small />
       </div>
     </div>
   );
