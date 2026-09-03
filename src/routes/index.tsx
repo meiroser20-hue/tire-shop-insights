@@ -1,29 +1,46 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { IconMedal, IconRefresh } from "@tabler/icons-react";
+import {
+  IconRefresh,
+  IconTruck,
+  IconCar,
+  IconChartBar,
+  IconCircleDot,
+  IconTool,
+  IconScale,
+} from "@tabler/icons-react";
 import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
 import {
-  Avatar,
+  AnimatedInt,
+  AnimatedMoney,
   Bar,
-  Chip,
   ColorCard,
+  ColumnChart,
   Delta,
+  Donut,
   EmptyState,
   ErrorState,
-  MetricCard,
+  Gauge,
+  GlassMetric,
   Pill,
+  Plate,
+  Quote,
+  RankedList,
+  ReturningTag,
   Section,
   Segmented,
   Skeleton,
   SkeletonBlock,
+  Sparkline,
   TimeFilter,
+  Timeline,
+  VolumeChips,
 } from "@/components/kit";
 import {
   amountOf,
   customerName,
   get,
   groupSum,
-  initials,
   isHeavy,
   isPrivate,
   num,
@@ -66,6 +83,14 @@ const catKeys = ["category", "service_category", "cat"];
 const qtyKeys = ["quantity", "qty", "units", "tquant"];
 const sizeKeys = ["size", "tire_size", "measure"];
 
+const CLASS_COLORS: Record<string, string> = {
+  משא: "var(--v-heavy)",
+  פרטי: "var(--v-private)",
+  מסחרי: "var(--v-commercial)",
+  טרקטור: "var(--v-tractor)",
+  בלון: "var(--v-balloon)",
+};
+
 function Home() {
   const { profile } = useAuth();
   const { vat, setVat } = usePrefs();
@@ -73,6 +98,10 @@ function Home() {
 
   const sales = useView("v_sales", time, { limit: 5000 });
   const prev = usePrevView("v_sales", time);
+  const daily = useView("v_daily_summary", null, {
+    limit: 14,
+    order: { key: ["doc_date"] },
+  });
   const sync = useView("sync_log", null, {
     limit: 1,
     order: { key: ["finished_at", "started_at"] },
@@ -84,6 +113,13 @@ function Home() {
     () => (prev.data ?? []).reduce((s, r) => s + amountOf(r, vat), 0),
     [prev.data, vat],
   );
+
+  const spark = useMemo(() => {
+    const d = [...(daily.data ?? [])]
+      .sort((a, b) => str(a["doc_date"]).localeCompare(str(b["doc_date"])))
+      .slice(-7);
+    return d.map((r) => num(get(r, vat === "net" ? ["revenue_net"] : ["revenue_gross"])));
+  }, [daily.data, vat]);
 
   const lastSync = sync.data?.[0]
     ? agoText(get(sync.data[0], ["finished_at", "synced_at", "created_at", "updated_at"]))
@@ -111,12 +147,18 @@ function Home() {
             <Skeleton className="mx-auto h-12 w-48" />
           ) : (
             <>
-              <div className="tnum text-[50px] font-500 leading-none text-coral-900">
-                {ils(total)}
+              <div className="tnum text-[50px] font-500 leading-none text-red-900">
+                <AnimatedMoney value={total} />
               </div>
               <div className="mt-2">
                 <Delta value={change(total, prevTotal)} />
               </div>
+              {spark.length > 1 && (
+                <div className="mx-auto mt-3 max-w-[280px]">
+                  <Sparkline points={spark} color="var(--red-700)" />
+                  <div className="mt-0.5 text-[10.5px] text-red-900/60">7 הימים האחרונים</div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -183,26 +225,50 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
   return (
     <Section first>
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
-        <MetricCard
+        <GlassMetric
           label="משא כבד"
           value={ils(sum(heavy))}
           sub={cars(veh(heavy))}
           delta={change(sum(heavy), sum(prevRows.filter(isHeavy)))}
+          color="var(--v-heavy)"
+          Icon={IconTruck}
         />
-        <MetricCard
+        <GlassMetric
           label="רכב פרטי"
           value={ils(sum(priv))}
           sub={cars(veh(priv))}
           delta={change(sum(priv), sum(prevRows.filter(isPrivate)))}
+          color="var(--v-private)"
+          Icon={IconCar}
         />
-        <MetricCard
+        <GlassMetric
           label="ממוצע לרכב"
           value={ils(vehicles ? sum(rows) / vehicles : 0)}
           sub={cars(vehicles)}
+          color="var(--v-commercial)"
+          Icon={IconChartBar}
         />
-        <MetricCard label="צמיגים נמכרו" value={int(catQty("צמיג"))} sub="יחידות" />
-        <MetricCard label="תקרים תוקנו" value={int(catQty("תקר"))} sub="יחידות" />
-        <MetricCard label="איזונים" value={int(catQty("איזון"))} sub="יחידות" />
+        <GlassMetric
+          label="צמיגים נמכרו"
+          value={int(catQty("צמיג"))}
+          sub="יחידות"
+          color="var(--s-tire)"
+          Icon={IconCircleDot}
+        />
+        <GlassMetric
+          label="תקרים תוקנו"
+          value={int(catQty("תקר"))}
+          sub="יחידות"
+          color="var(--s-punc)"
+          Icon={IconTool}
+        />
+        <GlassMetric
+          label="איזונים"
+          value={int(catQty("איזון"))}
+          sub="יחידות"
+          color="var(--s-balance)"
+          Icon={IconScale}
+        />
       </div>
     </Section>
   );
@@ -221,35 +287,17 @@ function HourlySection({ rows }: { rows: Row[] }) {
       const h = d.getHours();
       m.set(h, (m.get(h) ?? 0) + amountOf(r, vat));
     }
-    return [...m.entries()].sort((a, b) => a[0] - b[0]);
+    return [...m.entries()].sort((a, b) => a[0] - b[0]) as Array<[number, number]>;
   }, [rows, vat]);
 
   if (!data.length) return null;
 
-  const max = Math.max(...data.map((d) => d[1]));
   const peak = data.reduce((a, b) => (b[1] > a[1] ? b : a));
   const quiet = data.reduce((a, b) => (b[1] < a[1] ? b : a));
 
   return (
     <Section title="תנועה לפי שעה">
-      <div className="flex h-28 items-end gap-1.5">
-        {data.map(([h, v]) => {
-          const ratio = max ? v / max : 0;
-          return (
-            <div key={h} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className="w-full rounded-t-[6px]"
-                style={{
-                  height: `${Math.max(4, ratio * 88)}px`,
-                  background:
-                    h === peak[0] ? "var(--coral-600)" : `rgba(232,115,74,${0.25 + ratio * 0.4})`,
-                }}
-              />
-              <span className="tnum text-[10px] text-ink-3">{h}</span>
-            </div>
-          );
-        })}
-      </div>
+      <ColumnChart data={data} valueFmt={(v) => ils(v)} />
       <p className="tnum mt-2 text-[11px] text-ink-3">
         שעת השיא {String(peak[0]).padStart(2, "0")}:00 · {String(quiet[0]).padStart(2, "0")}:00 שקטה
       </p>
@@ -278,36 +326,27 @@ function ClassSplit({ rows }: { rows: Row[] }) {
   const total = groups.reduce((s, g) => s + g.value, 0);
   if (!groups.length || !total) return null;
 
-  const colors = ["var(--coral-600)", "var(--coral-400)", "var(--coral-200)", "var(--coral-100)"];
-  let acc = 0;
-  const stops = groups
-    .slice(0, 4)
-    .map((g, i) => {
-      const start = (acc / total) * 360;
-      acc += g.value;
-      const end = (acc / total) * 360;
-      return `${colors[i]} ${start}deg ${end}deg`;
-    })
-    .join(", ");
+  const fallback = ["var(--red-600)", "var(--red-400)", "var(--red-200)", "var(--red-100)"];
+  const top = groups.slice(0, 5);
+  const colorOf = (k: string, i: number) => CLASS_COLORS[k] ?? fallback[i % fallback.length] ?? "";
 
   const vehicles = uniqueCount(rows, (r) => str(get(r, vehicleKeys))) || rows.length;
 
   return (
     <Section title="כבד מול פרטי">
       <div className="flex items-center gap-5">
-        <div
-          className="relative size-28 shrink-0 rounded-full"
-          style={{ background: `conic-gradient(${stops})` }}
-        >
-          <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-white">
-            <span className="tnum text-[14px] font-500 text-ink">{ils(total)}</span>
-            <span className="tnum text-[10px] text-ink-3">{cars(vehicles)}</span>
-          </div>
-        </div>
+        <Donut
+          slices={top.map((g, i) => ({ key: g.key, value: g.value, color: colorOf(g.key, i) }))}
+          center={ils(total)}
+          sub={cars(vehicles)}
+        />
         <div className="min-w-0 flex-1 space-y-2">
-          {groups.slice(0, 4).map((g, i) => (
+          {top.map((g, i) => (
             <div key={g.key} className="flex items-center gap-2 text-[12.5px]">
-              <span className="size-2.5 shrink-0 rounded-full" style={{ background: colors[i] }} />
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ background: colorOf(g.key, i) }}
+              />
               <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
               <span className="tnum text-ink-3">{Math.round((g.value / total) * 100)}%</span>
               <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
@@ -334,17 +373,24 @@ function ServiceMix({ rows }: { rows: Row[] }) {
   );
   if (!groups.length) return null;
   const max = groups[0]?.value ?? 0;
+  const tones = [
+    "var(--s-tire)",
+    "var(--s-punc)",
+    "var(--s-balance)",
+    "var(--s-mount)",
+    "var(--s-calib)",
+  ];
 
   return (
     <Section title="מה נמכר">
       <div className="space-y-2.5">
-        {groups.map((g) => (
+        {groups.map((g, i) => (
           <div key={g.key}>
             <div className="mb-1 flex items-center justify-between text-[12.5px]">
               <span className="text-ink">{g.key}</span>
               <span className="tnum text-ink-2">{ils(g.value)}</span>
             </div>
-            <Bar value={g.value} max={max} />
+            <Bar value={g.value} max={max} color={tones[i % tones.length] ?? "var(--red-500)"} />
           </div>
         ))}
       </div>
@@ -372,28 +418,21 @@ function TopCustomers() {
 
   return (
     <Section title="לקוחות מובילים">
-      <div className="space-y-3">
-        {top.map((c, i) => {
-          const name = customerName(c);
+      <RankedList
+        items={top.map((c, i) => {
           const life = num(get(c, ["lifetime_net", "lifetime_gross", "lifetime", "total_net"]));
-          return (
-            <div key={i} className="flex items-center gap-3">
-              <Avatar initials={initials(name)} name={name} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-[14px] text-ink">{name}</span>
-                  {i === 0 && <IconMedal size={15} stroke={1.5} className="text-[#C9A227]" />}
-                </div>
-                <div className="tnum text-[11px] text-ink-3">
-                  {visits(num(get(c, ["visits", "visit_count"])))} ·{" "}
-                  {cars(num(get(c, ["vehicles", "vehicle_count"])))}
-                </div>
-              </div>
-              <span className="tnum text-[14px] text-ink">{ils(life || amountOf(c, vat))}</span>
-            </div>
-          );
+          const value = life || amountOf(c, vat);
+          return {
+            key: `${i}`,
+            label: customerName(c),
+            value,
+            valueText: ils(value),
+            sub: `${visits(num(get(c, ["visits", "visit_count"])))} · ${cars(
+              num(get(c, ["vehicles", "vehicle_count"])),
+            )}`,
+          };
         })}
-      </div>
+      />
     </Section>
   );
 }
@@ -408,23 +447,19 @@ function TopSizes({ rows }: { rows: Row[] }) {
         rows.filter((r) => str(get(r, sizeKeys))),
         (r) => str(get(r, sizeKeys)),
         (r) => amountOf(r, vat),
-      ).slice(0, 8),
+      ).slice(0, 10),
     [rows, vat],
   );
   if (!sizes.length) return null;
   return (
     <Section title="מידות מובילות">
-      <div className="flex flex-wrap gap-2">
-        {sizes.map((s, i) => (
-          <Chip key={s.key} tone={i < 3 ? "coral" : "plain"}>
-            <span dir="ltr">{s.key}</span>
-            <span className="opacity-60">·</span>
-            {int(s.count)} יח׳
-            <span className="opacity-60">·</span>
-            {ils(s.value)}
-          </Chip>
-        ))}
-      </div>
+      <VolumeChips
+        items={sizes.map((s) => ({
+          key: s.key,
+          value: s.value,
+          text: `${s.key} · ${int(s.count)} יח׳`,
+        }))}
+      />
     </Section>
   );
 }
@@ -445,40 +480,34 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
 
   return (
     <Section title="רכבים אחרונים">
-      <div className="space-y-3">
-        {recent.map((r, i) => {
+      <Timeline
+        items={recent.map((r, i) => {
           const name = customerName(r);
           const repeats = counts.get(name) ?? 1;
-          return (
-            <div key={i} className="flex items-center gap-3">
-              <Avatar initials={initials(name)} name={name} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-[14px] text-ink">{name}</span>
-                  {repeats > 1 && (
-                    <span className="rounded-full bg-[#E4F4EE] px-1.5 py-0.5 text-[10px] text-up">
-                      חוזר ×{repeats}
-                    </span>
-                  )}
-                </div>
-                <div className="tnum truncate text-[11px] text-ink-3">
-                  {[
-                    timeOf(get(r, ["signed_at", "doc_time", "doc_date"])),
-                    str(get(r, vehicleKeys)),
-                    str(get(r, ["family_desc", "category", "part_des"])),
-                  ]
+          const plate = str(get(r, vehicleKeys));
+          return {
+            key: `${i}`,
+            time: timeOf(get(r, ["signed_at", "doc_time", "doc_date"])),
+            title: (
+              <span className="flex items-center gap-2">
+                <span className="truncate">{name}</span>
+                {repeats > 1 && <ReturningTag times={repeats} />}
+              </span>
+            ),
+            sub: (
+              <span className="flex items-center gap-2">
+                {plate && <Plate>{plate}</Plate>}
+                <span>
+                  {[str(get(r, ["family_desc", "category", "part_des"])), str(r["vehicle_class"])]
                     .filter(Boolean)
                     .join(" · ")}
-                </div>
-              </div>
-              <div className="text-left">
-                <div className="tnum text-[14px] text-ink">{ils(amountOf(r, vat))}</div>
-                <div className="text-[10.5px] text-ink-3">{str(get(r, ["vehicle_class"]))}</div>
-              </div>
-            </div>
-          );
+                </span>
+              </span>
+            ),
+            value: ils(amountOf(r, vat)),
+          };
         })}
-      </div>
+      />
     </Section>
   );
 }
@@ -496,32 +525,31 @@ function FinanceStrip() {
   if (q.isError || !(q.data ?? []).length) return null;
   const rows = q.data ?? [];
   const openSum = rows.reduce(
-    (s, r) => s + num(get(r, ["open_balance", "balance", "debt", "amount"])),
+    (s, r) => s + num(get(r, ["open_debt", "open_balance", "balance"])),
     0,
   );
-  const overdue = rows.reduce(
-    (s, r) => s + num(get(r, ["overdue", "past_due", "aging_90", "days_90"])),
-    0,
-  );
-  const supplier = 0;
-  const weekly = rows.reduce((s, r) => s + num(get(r, ["due_this_week", "expected_week"])), 0);
+  const overdue = rows.reduce((s, r) => s + num(get(r, ["total_overdue", "over_90"])), 0);
+  const soon = rows.reduce((s, r) => s + num(get(r, ["days_1_30"])), 0);
+  const future = rows.reduce((s, r) => s + num(get(r, ["future"])), 0);
 
   return (
     <Section title="כספים">
-      <div className="grid grid-cols-2 gap-2.5">
-        <ColorCard label="חייבים לי" value={ils(openSum)} bg="var(--teal-bg)" fg="var(--teal-fg)" />
+      <div className="grid grid-cols-3 gap-2.5">
         <ColorCard
-          label="אני חייב"
-          value={ils(supplier)}
-          bg="var(--violet-bg)"
-          fg="var(--violet-fg)"
+          label="חייבים לי"
+          value={ils(openSum)}
+          bg="var(--teal-bg)"
+          fg="var(--teal-fg)"
+          className="col-span-2 row-span-2 flex flex-col justify-center"
         />
-        <ColorCard label="בפיגור" value={ils(overdue)} bg="var(--amber-bg)" fg="var(--amber-fg)" />
+        <ColorCard label="בפיגור" value={ils(overdue)} bg="#FCE8ED" fg="var(--red-700)" />
+        <ColorCard label="עד 30 יום" value={ils(soon)} bg="var(--amber-bg)" fg="var(--amber-fg)" />
         <ColorCard
-          label="צפוי להיכנס השבוע"
-          value={ils(weekly)}
+          label="עתידי"
+          value={ils(future)}
           bg="var(--blue-bg)"
           fg="var(--blue-fg)"
+          className="col-span-3"
         />
       </div>
     </Section>
@@ -532,7 +560,6 @@ function FinanceStrip() {
 
 function StockStrip() {
   const stock = useView("v_stock_current", null, { limit: 2000 });
-  const dead = useView("v_dead_stock", null, { limit: 2000 });
   const forecast = useView("v_stock_forecast", null, { limit: 2000 });
 
   if (stock.isLoading)
@@ -549,28 +576,34 @@ function StockStrip() {
     const d = num(get(r, ["days_to_zero", "days_left"]));
     return d > 0 && d <= 7;
   });
-  const units = stockRows.reduce(
-    (s, r) => s + num(get(r, ["balance", "qty", "quantity", "on_hand"])),
-    0,
-  );
-  const urgent = [...soon].sort(
-    (a, b) => num(get(a, ["days_to_zero"])) - num(get(b, ["days_to_zero"])),
-  )[0];
+  const units = stockRows.reduce((s, r) => s + num(get(r, ["balance", "bal_now", "qty"])), 0);
+  const dead = stockRows.filter((r) => num(get(r, ["days_since_move"])) >= 90);
 
   return (
     <Section title="מלאי">
       <div className="grid grid-cols-3 gap-2.5">
-        <MetricCard label="ייגמר השבוע" value={int(soon.length)} sub="פריטים" />
-        <MetricCard label="צמיגים במלאי" value={int(units)} sub="יחידות" />
-        <MetricCard label="מלאי מת" value={int((dead.data ?? []).length)} sub="פריטים" />
+        <Gauge
+          value={soon.length}
+          max={Math.max(10, fRows.length)}
+          label="ייגמר השבוע"
+          valueText={int(soon.length)}
+          color="var(--red-600)"
+        />
+        <Gauge
+          value={units}
+          max={Math.max(1, units)}
+          label="יחידות במלאי"
+          valueText={int(units)}
+          color="var(--s-balance)"
+        />
+        <Gauge
+          value={dead.length}
+          max={Math.max(10, stockRows.length)}
+          label="מלאי מת"
+          valueText={int(dead.length)}
+          color="var(--s-mount)"
+        />
       </div>
-      {urgent && (
-        <p className="tnum mt-3 text-[11px] text-ink-2">
-          הדחוף ביותר: {str(get(urgent, sizeKeys))} {str(get(urgent, ["brand", "manufacturer"]))} ·
-          נותרו {int(num(get(urgent, ["balance", "qty"])))} יח׳ · צפוי להיגמר בעוד{" "}
-          {int(num(get(urgent, ["days_to_zero"])))} ימים
-        </p>
-      )}
     </Section>
   );
 }
@@ -585,12 +618,7 @@ function Insights() {
     <Section title="תובנות">
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <p
-            key={i}
-            className="rounded-[14px] bg-coral-050 px-3.5 py-3 text-[12.5px] text-coral-900"
-          >
-            {str(get(r, ["insight", "text", "message", "title"]))}
-          </p>
+          <Quote key={i}>{str(get(r, ["insight", "text", "message", "title"]))}</Quote>
         ))}
       </div>
     </Section>
