@@ -265,7 +265,7 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
 
   return (
     <Section first>
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-6">
         <GlassMetric
           label="משא כבד"
           value={ils(sum(heavy))}
@@ -381,8 +381,11 @@ function ClassSplit({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const groups = useMemo(
     () =>
       groupSum(
-        rows,
-        (r) => str(r["vehicle_class"]) || "אחר",
+        rows.filter((r) => {
+          const c = str(r["vehicle_class"]);
+          return c && c !== "לא מסווג" && c !== "אחר";
+        }),
+        (r) => str(r["vehicle_class"]),
         (r) => amountOf(r, vat),
       ),
     [rows, vat],
