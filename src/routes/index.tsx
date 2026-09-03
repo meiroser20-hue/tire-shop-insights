@@ -35,7 +35,7 @@ import {
 import { useView, usePrevView } from "@/lib/hooks";
 import { usePrefs } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth";
-import { agoText, greeting, ils, int, timeOf, change } from "@/lib/format";
+import { agoText, greeting, ils, int, timeOf, change, cars, visits } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -186,19 +186,19 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <MetricCard
           label="משא כבד"
           value={ils(sum(heavy))}
-          sub={`${int(veh(heavy))} רכבים`}
+          sub={cars(veh(heavy))}
           delta={change(sum(heavy), sum(prevRows.filter(isHeavy)))}
         />
         <MetricCard
           label="רכב פרטי"
           value={ils(sum(priv))}
-          sub={`${int(veh(priv))} רכבים`}
+          sub={cars(veh(priv))}
           delta={change(sum(priv), sum(prevRows.filter(isPrivate)))}
         />
         <MetricCard
           label="ממוצע לרכב"
           value={ils(vehicles ? sum(rows) / vehicles : 0)}
-          sub={`${int(vehicles)} רכבים`}
+          sub={cars(vehicles)}
         />
         <MetricCard label="צמיגים נמכרו" value={int(catQty("צמיג"))} sub="יחידות" />
         <MetricCard label="תקרים תוקנו" value={int(catQty("תקר"))} sub="יחידות" />
@@ -301,7 +301,7 @@ function ClassSplit({ rows }: { rows: Row[] }) {
         >
           <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-white">
             <span className="tnum text-[14px] font-500 text-ink">{ils(total)}</span>
-            <span className="tnum text-[10px] text-ink-3">{int(vehicles)} רכבים</span>
+            <span className="tnum text-[10px] text-ink-3">{cars(vehicles)}</span>
           </div>
         </div>
         <div className="min-w-0 flex-1 space-y-2">
@@ -310,7 +310,7 @@ function ClassSplit({ rows }: { rows: Row[] }) {
               <span className="size-2.5 shrink-0 rounded-full" style={{ background: colors[i] }} />
               <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
               <span className="tnum text-ink-3">{Math.round((g.value / total) * 100)}%</span>
-              <span className="tnum text-ink-2">{carsIn(g.key)} רכבים</span>
+              <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
             </div>
           ))}
         </div>
@@ -385,8 +385,8 @@ function TopCustomers() {
                   {i === 0 && <IconMedal size={15} stroke={1.5} className="text-[#C9A227]" />}
                 </div>
                 <div className="tnum text-[11px] text-ink-3">
-                  {int(num(get(c, ["visits", "visit_count"])))} ביקורים ·{" "}
-                  {int(num(get(c, ["vehicles", "vehicle_count"])))} רכבים
+                  {visits(num(get(c, ["visits", "visit_count"])))} ·{" "}
+                  {cars(num(get(c, ["vehicles", "vehicle_count"])))}
                 </div>
               </div>
               <span className="tnum text-[14px] text-ink">{ils(life || amountOf(c, vat))}</span>

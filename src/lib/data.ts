@@ -180,7 +180,10 @@ export function amountOf(row: Row, vat: Vat): number {
 }
 
 export function customerName(row: Row): string {
-  return str(get(row, ["customer_name", "cust_name", "custdes", "name"])) || "לקוח לא מזוהה";
+  return (
+    str(get(row, ["display_name", "cust_des", "customer_name", "cust_name", "custdes", "name"])) ||
+    "לקוח לא מזוהה"
+  );
 }
 
 export function vehicleClassOf(row: Row): string {
