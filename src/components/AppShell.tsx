@@ -50,7 +50,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-white lg:bg-[#2E0C17] lg:p-3">
+    <div
+      className="min-h-screen bg-white lg:p-3"
+      style={{
+        backgroundImage:
+          "radial-gradient(115% 85% at 90% 8%, #8A1636 0%, transparent 55%), linear-gradient(158deg, #43101F 0%, #5C1329 45%, #2C0A15 100%)",
+      }}
+    >
       <DesktopNav />
       <main className="app-surface min-h-screen min-w-0 pb-28 lg:mr-[248px] lg:min-h-[calc(100vh-24px)] lg:overflow-hidden lg:rounded-[24px] lg:pb-10">
         {children}
