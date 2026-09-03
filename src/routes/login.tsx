@@ -55,7 +55,9 @@ function Login() {
   };
 
   return (
-    <div className="head-grad flex min-h-screen flex-col items-center px-6 pt-16">
+    <div className="relative flex min-h-screen flex-col items-center bg-white px-6 pt-16">
+      <div className="head-grad pointer-events-none absolute inset-x-0 top-0 h-[460px]" />
+      <div className="relative flex w-full flex-col items-center">
       <div className="flex size-20 items-center justify-center rounded-full bg-white text-[15.5px] font-600 text-coral-700 shadow-[0_6px_20px_rgba(216,90,48,.15)]">
         ב״ד
       </div>
@@ -105,7 +107,8 @@ function Login() {
         </button>
       </form>
 
-      <div className="mt-auto flex items-center gap-1.5 py-6 text-[11px] text-ink-3">
+      </div>
+      <div className="relative mt-auto flex items-center gap-1.5 py-6 text-[11px] text-ink-3">
         <IconLock size={13} stroke={1.5} />
         החיבור מוצפן ומאובטח · ברכת הדרך © 2026
       </div>

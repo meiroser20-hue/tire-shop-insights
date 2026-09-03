@@ -13,11 +13,5 @@ export const db = createClient(URL, ANON, {
   },
 });
 
-/** Same session, `public` schema — used for `profiles`. */
-export const pub = createClient(URL, ANON, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    storageKey: "bd-auth",
-  },
-});
+/** Same client, `public` schema — used for `profiles`. */
+export const pub = db.schema("public");
