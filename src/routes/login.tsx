@@ -4,11 +4,8 @@ import { IconLock } from "@tabler/icons-react";
 import { db } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { useRotating } from "@/lib/motion";
+import { LOGO_URL } from "@/lib/brand";
 import bg from "@/assets/login-bg.jpg.asset.json";
-
-/* הלוגו מתארח כרגע באתר הוורדפרס. אם מעלים אותו כ-asset ב-Lovable —
-   להחליף את הקבוע הזה ב-import logo from "@/assets/logo.png.asset.json" ואז logo.url */
-const LOGO_URL = "https://birkat-haderech.co.il/wp-content/uploads/2026/04/cropped-1.png";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
