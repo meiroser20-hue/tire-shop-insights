@@ -1,4 +1,12 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  createElement,
+  isValidElement,
+  useRef,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { IconAlertCircle, IconCrown, IconDownload } from "@tabler/icons-react";
 import { TIME_LABELS, type TimeKey } from "@/lib/data";
 import { ils, int, pct } from "@/lib/format";
@@ -9,16 +17,24 @@ const RED_GRAD = "linear-gradient(135deg,#6B1730 0%,#C42B4E 55%,#E03E5F 100%)";
 /* --------------------------------- layout -------------------------------- */
 
 /** אייקון סקשן — מקבל קומפוננטה (`icon={IconClock}`) או אלמנט (`icon={<IconClock />}`). */
-type SectionIcon =
-  ((p: { size?: number; stroke?: number; className?: string }) => ReactNode) | ReactNode;
+type SectionIconProps = { size?: number; stroke?: number; className?: string };
+type SectionIcon = ComponentType<SectionIconProps> | ReactNode;
 
+/**
+ * אייקוני tabler הם forwardRef — אובייקט עם $$typeof, לא פונקציה.
+ * לכן הבדיקה חייבת להיות "האם זה אלמנט מוכן", ולא "האם זה פונקציה".
+ */
 function sectionGlyph(icon: SectionIcon): ReactNode {
-  if (!icon) return null;
-  if (typeof icon === "function") {
-    const Glyph = icon as (p: { size?: number; stroke?: number; className?: string }) => ReactNode;
-    return <Glyph size={17} stroke={1.6} className="shrink-0 text-[#C2C5CD]" />;
-  }
-  return <span className="flex shrink-0 items-center text-[#C2C5CD]">{icon}</span>;
+  if (icon === null || icon === undefined || icon === false) return null;
+
+  const body = isValidElement(icon)
+    ? icon
+    : typeof icon === "function" ||
+        (typeof icon === "object" && icon !== null && "$$typeof" in icon)
+      ? createElement(icon as ComponentType<SectionIconProps>, { size: 17, stroke: 1.6 })
+      : icon;
+
+  return <span className="flex shrink-0 items-center text-[#C2C5CD]">{body}</span>;
 }
 
 export function Section({
