@@ -185,6 +185,8 @@ export function GlassMetric({
   delta,
   color = "var(--red-600)",
   Icon,
+  numericValue,
+  format = "money",
 }: {
   label: string;
   value: string;
@@ -192,7 +194,10 @@ export function GlassMetric({
   delta?: number | null;
   color?: string;
   Icon?: (p: { size?: number; stroke?: number; className?: string }) => ReactNode;
+  numericValue?: number;
+  format?: "money" | "int";
 }) {
+  const animated = useCountUp(numericValue ?? 0);
   return (
     <div
       className="tap relative overflow-hidden rounded-[16px] border border-white/60 px-3.5 py-3"
@@ -210,7 +215,9 @@ export function GlassMetric({
       )}
       <div className="pr-1.5">
         <div className="text-[11px] text-ink-3">{label}</div>
-        <div className="tnum mt-1 text-[23px] font-500 leading-tight text-ink">{value}</div>
+        <div className="tnum mt-1 text-[23px] font-500 leading-tight text-ink">
+          {numericValue === undefined ? value : format === "money" ? ils(animated) : int(animated)}
+        </div>
         <div className="mt-0.5 flex items-center gap-2 text-[10.5px] text-ink-3">
           {sub && <span className="tnum">{sub}</span>}
           <Delta value={delta ?? null} small />
@@ -310,6 +317,7 @@ export function ColorCard({
   bg,
   fg,
   className = "",
+  numericValue,
 }: {
   label: string;
   value: string;
@@ -317,14 +325,18 @@ export function ColorCard({
   bg: string;
   fg: string;
   className?: string;
+  numericValue?: number;
 }) {
+  const animated = useCountUp(numericValue ?? 0);
   return (
     <div
       className={`tap rounded-[16px] px-3.5 py-3 ${className}`}
       style={{ background: bg, color: fg }}
     >
       <div className="text-[11px] opacity-80">{label}</div>
-      <div className="tnum mt-1 text-[21px] font-500">{value}</div>
+      <div className="tnum mt-1 text-[21px] font-500">
+        {numericValue === undefined ? value : ils(animated)}
+      </div>
       {sub && <div className="tnum mt-0.5 text-[10.5px] opacity-70">{sub}</div>}
     </div>
   );
@@ -415,11 +427,14 @@ export function Donut({
   slices,
   center,
   sub,
+  numericCenter,
 }: {
   slices: Array<{ key: string; value: number; color: string }>;
   center: string;
   sub?: string;
+  numericCenter?: number;
 }) {
+  const animatedCenter = useCountUp(numericCenter ?? 0);
   const total = slices.reduce((s, x) => s + x.value, 0);
   if (!total) return null;
   let acc = 0;
@@ -432,11 +447,14 @@ export function Donut({
     .join(", ");
   return (
     <div
-      className="relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
+      key={stops}
+      className="donut-turn relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
       style={{ background: `conic-gradient(${stops})` }}
     >
       <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-white">
-        <span className="tnum text-[14px] font-500 text-ink">{center}</span>
+        <span className="tnum text-[14px] font-500 text-ink">
+          {numericCenter === undefined ? center : ils(animatedCenter)}
+        </span>
         {sub && <span className="tnum text-[10px] text-ink-3">{sub}</span>}
       </div>
     </div>
@@ -550,6 +568,7 @@ export function Gauge({
   color?: string;
 }) {
   const ratio = max > 0 ? Math.min(1, value / max) : 0;
+  const animatedValue = useCountUp(value);
   const r = 34;
   const c = Math.PI * r;
   return (
@@ -573,7 +592,9 @@ export function Gauge({
           style={{ transition: "stroke-dashoffset 400ms cubic-bezier(.22,1,.36,1)" }}
         />
       </svg>
-      <div className="tnum -mt-2 text-[19px] font-500 text-ink">{valueText}</div>
+      <div className="tnum -mt-2 text-[19px] font-500 text-ink">
+        {valueText === int(value) ? int(animatedValue) : valueText}
+      </div>
       <div className="mt-0.5 text-center text-[11px] text-ink-3">{label}</div>
     </div>
   );
