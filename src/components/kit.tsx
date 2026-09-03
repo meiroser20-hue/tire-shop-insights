@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { IconAlertCircle, IconDownload } from "@tabler/icons-react";
+import { IconAlertCircle, IconCrown, IconDownload } from "@tabler/icons-react";
 import { TIME_LABELS, type TimeKey } from "@/lib/data";
 import { ils, int, pct } from "@/lib/format";
 import { useCountUp } from "@/lib/motion";
@@ -10,22 +10,24 @@ const RED_GRAD = "linear-gradient(135deg,#6B1730 0%,#C42B4E 55%,#E03E5F 100%)";
 
 export function Section({
   title,
+  icon,
   action,
   children,
   first,
 }: {
   title?: string;
+  icon?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   first?: boolean;
 }) {
   return (
-    <section className={first ? "py-4" : "hairline py-5"}>
+    <section className={first ? "py-4" : "py-5"}>
       {(title || action) && (
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           {title && (
-            <h2 className="flex items-stretch gap-2 text-[15.5px] font-600 text-ink">
-              <span className="section-rule my-0.5 inline-block" />
+            <h2 className="flex items-center gap-2.5 text-[15.5px] font-600 text-ink">
+              {icon && <span className="section-rule">{icon}</span>}
               {title}
             </h2>
           )}
@@ -248,14 +250,30 @@ export function Avatar({ name, initials }: { name?: string; initials: string }) 
   );
 }
 
-export function Bar({ value, max, color }: { value: number; max: number; color?: string }) {
+export function Bar({
+  value,
+  max,
+  color,
+  thin,
+}: {
+  value: number;
+  max: number;
+  color?: string;
+  thin?: boolean;
+}) {
   const w = max > 0 ? Math.max(2, (value / max) * 100) : 0;
+  const base = color ?? "var(--red-600)";
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-surf">
+    <div
+      className={`w-full overflow-hidden rounded-full bg-[#F4F4F7] ${thin ? "h-[5px]" : "h-2"}`}
+    >
       <div
         title={ils(value)}
         className="h-full rounded-full transition-[width] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
-        style={{ width: `${w}%`, background: color ?? "var(--red-500)" }}
+        style={{
+          width: `${w}%`,
+          background: `linear-gradient(90deg, ${base} 0%, color-mix(in srgb, ${base} 55%, white) 100%)`,
+        }}
       />
     </div>
   );
@@ -330,16 +348,23 @@ export function ColorCard({
   numericValue?: number;
 }) {
   const animated = useCountUp(numericValue ?? 0);
+  const grad = bg.includes("gradient")
+    ? bg
+    : `linear-gradient(150deg, color-mix(in srgb, ${bg} 92%, transparent) 0%, color-mix(in srgb, ${bg} 34%, white) 45%, #ffffff 90%)`;
   return (
     <div
       className={`tap rounded-[16px] px-3.5 py-3 ${className}`}
-      style={{ background: bg, color: fg }}
+      style={{
+        background: grad,
+        color: fg,
+        border: `1px solid color-mix(in srgb, ${fg} 16%, transparent)`,
+      }}
     >
-      <div className="text-[11px] opacity-80">{label}</div>
-      <div className="tnum mt-1 text-[21px] font-500">
+      <div className="text-[11px] opacity-85">{label}</div>
+      <div className="tnum mt-1 text-[22px] font-500 leading-none">
         {numericValue === undefined ? value : ils(animated)}
       </div>
-      {sub && <div className="tnum mt-0.5 text-[10.5px] opacity-70">{sub}</div>}
+      {sub && <div className="tnum mt-1 text-[10.5px] opacity-70">{sub}</div>}
     </div>
   );
 }
@@ -384,49 +409,73 @@ export function Sparkline({
   );
 }
 
-/** Vertical columns with a marker dot above the peak. */
+/** Vertical columns with hover tooltip and dimming. */
 export function ColumnChart({
   data,
   labelOf,
   valueFmt,
+  subFmt,
 }: {
   data: Array<[string | number, number]>;
   labelOf?: (k: string | number) => string;
   valueFmt?: (v: number) => string;
+  subFmt?: (k: string | number, v: number) => string;
 }) {
   if (!data.length) return null;
   const max = Math.max(...data.map((d) => d[1]));
   const peakIdx = data.reduce((bi, d, i) => (d[1] > (data[bi]?.[1] ?? 0) ? i : bi), 0);
   return (
-    <div className="flex h-32 items-end gap-1.5">
-      {data.map(([k, v], i) => {
-        const ratio = max ? v / max : 0;
-        const isPeak = i === peakIdx;
-        return (
-          <div key={String(k)} className="flex flex-1 flex-col items-center justify-end gap-1">
-            {isPeak && (
-              <>
-                <span className="tnum text-[9.5px] text-red-700">{valueFmt?.(v)}</span>
-                <span className="mb-0.5 size-1.5 rounded-full bg-red-600" />
-              </>
-            )}
-            <div
-              title={`${labelOf ? labelOf(k) : String(k)} · ${valueFmt?.(v) ?? int(v)}`}
-              className="w-full rounded-t-[6px] transition-[height] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
-              style={{
-                height: `${Math.max(4, ratio * 82)}px`,
-                background: isPeak ? "var(--red-600)" : `rgba(196,43,78,${0.18 + ratio * 0.42})`,
-              }}
-            />
-            <span className="tnum text-[10px] text-ink-3">{labelOf ? labelOf(k) : String(k)}</span>
-          </div>
-        );
-      })}
-    </div>
+    <>
+      <div className="group relative flex h-[150px] items-end gap-1.5">
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+          <span className="border-t border-dashed border-[#F1F1F4]" />
+          <span className="border-t border-dashed border-[#F1F1F4]" />
+          <span className="border-t border-dashed border-[#F1F1F4]" />
+          <span className="border-t border-dashed border-[#F1F1F4]" />
+        </div>
+        {data.map(([k, v], i) => {
+          const ratio = max ? v / max : 0;
+          const isPeak = i === peakIdx;
+          return (
+            <div key={String(k)} className="relative flex h-full flex-1 items-end">
+              <div
+                className="peer w-full cursor-pointer rounded-t-[7px] transition-[height,opacity] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:opacity-30 hover:!opacity-100"
+                style={{
+                  height: `${Math.max(5, ratio * 100)}%`,
+                  background: isPeak
+                    ? "linear-gradient(180deg,var(--red-600) 0%,rgba(196,43,78,.26) 100%)"
+                    : "linear-gradient(180deg,rgba(196,43,78,.32) 0%,rgba(196,43,78,.07) 100%)",
+                }}
+              />
+              <div className="pointer-events-none absolute bottom-[calc(100%+10px)] right-1/2 z-20 translate-x-1/2 translate-y-1 whitespace-nowrap rounded-[10px] bg-[rgba(22,23,27,.94)] px-3 py-1.5 opacity-0 transition-all duration-150 peer-hover:translate-y-0 peer-hover:opacity-100">
+                <span className="tnum block text-[12px] font-500 text-white">
+                  {valueFmt?.(v) ?? int(v)}
+                </span>
+                <span className="text-[10.5px] text-white/65">
+                  {subFmt?.(k, v) ?? (labelOf ? labelOf(k) : String(k))}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex gap-1.5">
+        {data.map(([k], i) => (
+          <span
+            key={String(k)}
+            className={`tnum flex-1 text-center text-[9.5px] ${
+              i === peakIdx ? "font-500 text-red-600" : "text-ink-3"
+            }`}
+          >
+            {labelOf ? labelOf(k) : String(k)}
+          </span>
+        ))}
+      </div>
+    </>
   );
 }
 
-/** Donut with an amount in the middle. */
+/** Thin donut ring with an amount in the middle. */
 export function Donut({
   slices,
   center,
@@ -441,24 +490,41 @@ export function Donut({
   const animatedCenter = useCountUp(numericCenter ?? 0);
   const total = slices.reduce((s, x) => s + x.value, 0);
   if (!total) return null;
+  const R = 41;
+  const C = 2 * Math.PI * R;
   let acc = 0;
-  const stops = slices
-    .map((s) => {
-      const a = (acc / total) * 360;
-      acc += s.value;
-      return `${s.color} ${a}deg ${(acc / total) * 360}deg`;
-    })
-    .join(", ");
   return (
-    <div
-      key={stops}
-      title={slices
-        .map((slice) => `${slice.key}: ${Math.round((slice.value / total) * 100)}%`)
-        .join(" · ")}
-      className="donut-turn relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
-      style={{ background: `conic-gradient(${stops})` }}
-    >
-      <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-white">
+    <div className="donut-turn relative size-[120px] shrink-0">
+      <svg viewBox="0 0 100 100" className="size-full">
+        <title>
+          {slices
+            .map((slice) => `${slice.key}: ${Math.round((slice.value / total) * 100)}%`)
+            .join(" · ")}
+        </title>
+        <circle cx="50" cy="50" r={R} fill="none" stroke="#F3F3F6" strokeWidth="10" />
+        {slices.map((sl) => {
+          const len = (sl.value / total) * C;
+          const off = -(acc / total) * C;
+          acc += sl.value;
+          return (
+            <circle
+              key={sl.key}
+              cx="50"
+              cy="50"
+              r={R}
+              fill="none"
+              stroke={sl.color}
+              strokeWidth="10"
+              strokeLinecap="round"
+              strokeDasharray={`${Math.max(0, len - 4)} ${C}`}
+              strokeDashoffset={off}
+              transform="rotate(-90 50 50)"
+              style={{ transition: "stroke-dasharray 400ms cubic-bezier(.22,1,.36,1)" }}
+            />
+          );
+        })}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="tnum text-[14px] font-500 text-ink">
           {numericCenter === undefined ? center : ils(animatedCenter)}
         </span>
@@ -468,59 +534,79 @@ export function Donut({
   );
 }
 
-/** Ranked list with medals and proportion bars. */
+/** Leaderboard: highlighted first place, compact ranked rows below. */
 export function RankedList({
   items,
 }: {
   items: Array<{ key: string; label: ReactNode; value: number; valueText: string; sub?: string }>;
 }) {
-  const max = Math.max(...items.map((i) => i.value), 0);
-  const medals = ["#C9A227", "#A8AEB8", "#B5793F"];
+  if (!items.length) return null;
+  const [top, ...rest] = items;
+  const rankTone = ["", "bg-[#F0F0F3] text-[#75767C]", "bg-[#F6EADF] text-[#8A5A31]"];
   return (
-    <div className="space-y-3">
-      {items.map((it, i) => (
-        <RankedItem
-          key={it.key}
-          item={it}
-          index={i}
-          max={max}
-          medal={medals[i] ?? "var(--ink-3)"}
-        />
+    <div>
+      {top && <LeaderTop item={top} />}
+      {rest.map((it, i) => (
+        <LeaderRow key={it.key} item={it} rank={i + 2} tone={rankTone[i + 1] ?? ""} />
       ))}
     </div>
   );
 }
 
-function RankedItem({
+function LeaderTop({
   item,
-  index,
-  max,
-  medal,
 }: {
   item: { key: string; label: ReactNode; value: number; valueText: string; sub?: string };
-  index: number;
-  max: number;
-  medal: string;
 }) {
   const animated = useCountUp(item.value);
   return (
-    <div className="flex items-center gap-3">
+    <div
+      className="mb-2.5 flex items-center gap-3.5 rounded-[16px] px-4 py-3.5"
+      style={{
+        background:
+          "linear-gradient(135deg,rgba(196,43,78,.07) 0%,rgba(196,43,78,.015) 70%,#ffffff 100%)",
+        border: "1px solid rgba(196,43,78,.10)",
+      }}
+    >
       <span
-        className="tnum flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-500 text-white"
-        style={{ background: medal ?? "var(--ink-3)" }}
+        className="flex size-10 shrink-0 items-center justify-center rounded-full text-[19px]"
+        style={{ background: "linear-gradient(135deg,#F3D98C,#D9AE43)", color: "#6B4E08" }}
       >
-        {index + 1}
+        <IconCrown size={19} stroke={1.6} />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-[14px] text-ink">{item.label}</span>
-          <span className="tnum shrink-0 text-[13px] text-ink-2">{ils(animated)}</span>
-        </div>
-        <div className="mt-1.5">
-          <Bar value={item.value} max={max} />
-        </div>
-        {item.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{item.sub}</div>}
+        <div className="truncate text-[16px] font-500 text-ink">{item.label}</div>
+        {item.sub && <div className="tnum mt-0.5 text-[11px] text-ink-3">{item.sub}</div>}
       </div>
+      <span className="tnum shrink-0 text-[22px] font-500 text-red-700">{ils(animated)}</span>
+    </div>
+  );
+}
+
+function LeaderRow({
+  item,
+  rank,
+  tone,
+}: {
+  item: { key: string; label: ReactNode; value: number; valueText: string; sub?: string };
+  rank: number;
+  tone: string;
+}) {
+  const animated = useCountUp(item.value);
+  return (
+    <div className="flex items-center gap-3 border-t border-line px-1 py-2.5">
+      <span
+        className={`tnum flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[11px] ${
+          tone || "bg-surf text-ink-3"
+        }`}
+      >
+        {rank}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13.5px] text-ink">{item.label}</div>
+        {item.sub && <div className="tnum text-[10.5px] text-ink-3">{item.sub}</div>}
+      </div>
+      <span className="tnum shrink-0 text-[14.5px] font-500 text-ink">{ils(animated)}</span>
     </div>
   );
 }
