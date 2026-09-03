@@ -231,6 +231,8 @@ export function MetricCard(p: {
   value: string;
   sub?: string;
   delta?: number | null;
+  numericValue?: number;
+  format?: "money" | "int";
 }) {
   return <GlassMetric {...p} />;
 }
@@ -254,7 +256,7 @@ export function Bar({
 }: {
   value: number;
   max: number;
-  color?: string;
+  color?: string | undefined;
   thin?: boolean;
 }) {
   const w = max > 0 ? Math.max(2, (value / max) * 100) : 0;
