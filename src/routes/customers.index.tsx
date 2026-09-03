@@ -173,7 +173,9 @@ function Customers() {
                           <Link
                             key={`${custId(child)}-${index}`}
                             to="/customers/$id"
-                            params={{ id: encodeURIComponent(custId(child) || customerName(child)) }}
+                            params={{
+                              id: encodeURIComponent(custId(child) || customerName(child)),
+                            }}
                             className="flex min-h-9 items-center justify-between gap-3 border-b border-line/70 py-2 text-[12.5px] last:border-0 hover:text-red-700"
                           >
                             <span className="truncate">{customerName(child)}</span>
