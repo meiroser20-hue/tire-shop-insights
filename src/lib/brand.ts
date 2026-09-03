@@ -1,10 +1,15 @@
 /**
- * מקור אחד ללוגו. כרגע הוא מתארח באתר הוורדפרס.
- * אם מעלים אותו כ-asset ב-Lovable — להחליף כאן בלבד:
- *   import logo from "@/assets/logo.png.asset.json";
- *   export const LOGO_URL = logo.url;
+ * שתי גרסאות ללוגו — אחת לכל סוג רקע. שתיהן מתארחות באתר הוורדפרס.
+ * אם מעלים אותן כ-assets ב-Lovable — להחליף כאן בלבד.
  */
-export const LOGO_URL = "https://birkat-haderech.co.il/wp-content/uploads/2026/04/cropped-1.png";
+
+/** הגרסה שיושבת על רקע כהה — העיגול במסך הכניסה. */
+export const LOGO_ON_DARK =
+  "https://birkat-haderech.co.il/wp-content/uploads/2026/04/cropped-1.png";
+
+/** הגרסה שיושבת על רקע בהיר — הבאדג' בסרגל הדסקטופ ובכותרת המובייל. */
+export const LOGO_ON_LIGHT =
+  "https://birkat-haderech.co.il/wp-content/uploads/2026/09/C2F488D0-D761-42AB-AE5A-E09C64816D32.png";
 
 /**
  * שמות תצוגה בעברית לחשבונות שהשם המלא שלהם בסופאבייס עדיין לטיני.
