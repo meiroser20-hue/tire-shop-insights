@@ -714,28 +714,28 @@ function FinanceStrip() {
           label="חייבים לי"
           value={ils(openSum)}
           numericValue={openSum}
-          bg="#3E8E72"
+          bg="62,142,114"
           fg="#276A54"
         />
         <ColorCard
           label="בפיגור"
           value={ils(overdue)}
           numericValue={overdue}
-          bg="#C4444B"
+          bg="196,68,75"
           fg="#9A3239"
         />
         <ColorCard
           label="עד 30 יום"
           value={ils(soon)}
           numericValue={soon}
-          bg="#C08A2E"
+          bg="192,138,46"
           fg="#8A6119"
         />
         <ColorCard
           label="עתידי"
           value={ils(future)}
           numericValue={future}
-          bg="#4F9E86"
+          bg="79,158,134"
           fg="#2F7A61"
         />
       </div>
