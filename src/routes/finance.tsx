@@ -1,9 +1,18 @@
 import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
-import { ColorCard, EmptyState, ErrorState, Section, SkeletonBlock } from "@/components/kit";
-import { BarList } from "./sales";
-import { customerName, get, groupSum, num, str } from "@/lib/data";
+import {
+  AnimatedMoney,
+  AreaCompare,
+  EmptyState,
+  ErrorState,
+  RankedList,
+  Section,
+  SkeletonBlock,
+  StackedBar,
+  Timeline,
+} from "@/components/kit";
+import { customerName, get, num, str } from "@/lib/data";
 import { useView } from "@/lib/hooks";
 import { useCanSeeProfit } from "@/lib/auth";
 import { ils, int, shortDate } from "@/lib/format";
@@ -30,6 +39,18 @@ export const Route = createFileRoute("/finance")({
 });
 
 const balK = ["open_debt", "open_balance", "balance", "debt"];
+const AGING = [
+  { key: "30", label: "עד 30", col: "days_1_30", color: "#F7B8C5" },
+  { key: "60", label: "30–60", col: "days_31_60", color: "#EE7189" },
+  { key: "90", label: "60–90", col: "days_61_90", color: "#C42B4E" },
+  { key: "90+", label: "90+", col: "over_90", color: "#6B1730" },
+] as const;
+
+function daysSince(v: unknown) {
+  const d = v ? new Date(str(v)) : null;
+  if (!d || Number.isNaN(d.getTime())) return 0;
+  return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
+}
 
 function Finance() {
   const canSeeProfit = useCanSeeProfit();
@@ -62,20 +83,54 @@ function Finance() {
   }, [obligo.data]);
   const totalDebt = rows.reduce((s, r) => s + num(get(r, balK)), 0);
 
-  const aging = useMemo(() => {
-    const buckets = { "30": 0, "60": 0, "90": 0, "90+": 0 };
-    for (const r of rows) {
-      buckets["30"] += num(get(r, ["days_1_30"]));
-      buckets["60"] += num(get(r, ["days_31_60"]));
-      buckets["90"] += num(get(r, ["days_61_90"]));
-      buckets["90+"] += num(get(r, ["over_90"]));
-    }
-    return buckets;
-  }, [rows]);
+  const agingSegments = useMemo(
+    () =>
+      AGING.map((a) => ({
+        key: a.key,
+        label: a.label,
+        color: a.color,
+        value: rows.reduce((s, r) => s + num(get(r, [a.col])), 0),
+      })),
+    [rows],
+  );
 
-  const supplierDebt = (purchases.data ?? []).reduce(
+  const topDebtors = useMemo(
+    () =>
+      [...rows]
+        .sort((a, b) => num(get(b, balK)) - num(get(a, balK)))
+        .slice(0, 3)
+        .map((r, i) => ({
+          key: `${i}`,
+          label: nameOf(r),
+          value: num(get(r, balK)),
+          valueText: ils(num(get(r, balK))),
+        })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, nameMap],
+  );
+
+  const supplierRows = purchases.data ?? [];
+  const supplierDebt = supplierRows.reduce(
     (s, r) => s + num(get(r, ["open_balance", "balance", "amount", "total"])),
     0,
+  );
+
+  const supplierTimeline = useMemo(
+    () =>
+      [...supplierRows]
+        .sort(
+          (a, b) =>
+            new Date(str(get(a, ["due_date", "doc_date", "date"]))).getTime() -
+            new Date(str(get(b, ["due_date", "doc_date", "date"]))).getTime(),
+        )
+        .slice(0, 8)
+        .map((r, i) => ({
+          key: `${i}`,
+          time: shortDate(get(r, ["due_date", "doc_date", "date"])),
+          title: str(get(r, ["supplier", "vendor", "supplier_name"])) || "ספק",
+          value: ils(num(get(r, ["open_balance", "balance", "amount", "total"]))),
+        })),
+    [supplierRows],
   );
 
   const notInvoiced = (docs.data ?? []).filter((r) => {
@@ -83,14 +138,14 @@ function Finance() {
     return v === false || str(v).toUpperCase() === "N" || str(v).toUpperCase() === "FALSE";
   });
 
-  const bySupplier = useMemo(
-    () =>
-      groupSum(
-        purchases.data ?? [],
-        (r) => str(get(r, ["supplier", "vendor", "supplier_name"])) || "ספק לא מזוהה",
-        (r) => num(get(r, ["amount", "total", "amount_net"])),
-      ),
-    [purchases.data],
+  /* naive 30 day projection: debts flow in, supplier debt flows out */
+  const flowIn = useMemo(
+    () => Array.from({ length: 30 }, (_, i) => (totalDebt / 30) * (i + 1)),
+    [totalDebt],
+  );
+  const flowOut = useMemo(
+    () => Array.from({ length: 30 }, (_, i) => (supplierDebt / 30) * (i + 1)),
+    [supplierDebt],
   );
 
   return (
@@ -108,87 +163,40 @@ function Finance() {
         ) : (
           <>
             <Section first title="חייבים לי">
-              <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-                <ColorCard
-                  label="עד 30 יום"
-                  value={ils(aging["30"])}
-                  bg="var(--teal-bg)"
-                  fg="var(--teal-fg)"
-                />
-                <ColorCard
-                  label="30–60"
-                  value={ils(aging["60"])}
-                  bg="var(--blue-bg)"
-                  fg="var(--blue-fg)"
-                />
-                <ColorCard
-                  label="60–90"
-                  value={ils(aging["90"])}
-                  bg="var(--amber-bg)"
-                  fg="var(--amber-fg)"
-                />
-                <ColorCard label="90+" value={ils(aging["90+"])} bg="#FBE9E9" fg="var(--down)" />
+              <div className="tnum text-[40px] font-500 leading-none text-red-900">
+                <AnimatedMoney value={totalDebt} />
               </div>
-              <p className="tnum mt-3 text-[12.5px] text-ink-2">סה״כ פתוח: {ils(totalDebt)}</p>
-            </Section>
-
-            <Section title="חייבים מובילים">
-              {rows.length === 0 ? (
-                <EmptyState text="אין חובות פתוחים כרגע" />
-              ) : (
-                <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-                  {[...rows]
-                    .sort((a, b) => num(get(b, balK)) - num(get(a, balK)))
-                    .slice(0, 15)
-                    .map((r, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between bg-white px-3 py-2.5 text-[14px]"
-                      >
-                        <span className="truncate text-ink">{nameOf(r)}</span>
-                        <span className="tnum text-ink-2">{ils(num(get(r, balK)))}</span>
-                      </div>
-                    ))}
+              <p className="mt-1 text-[11px] text-ink-3">סה״כ פתוח מול {int(rows.length)} לקוחות</p>
+              <div className="mt-4">
+                <StackedBar segments={[...agingSegments]} />
+              </div>
+              {topDebtors.length > 0 && (
+                <div className="mt-5">
+                  <RankedList items={topDebtors} />
                 </div>
               )}
             </Section>
 
             {canSeeProfit && (
               <>
-                <Section title="אני חייב לספקים">
-                  <ColorCard
-                    label="יתרה לספקים"
-                    value={ils(supplierDebt)}
-                    bg="var(--violet-bg)"
-                    fg="var(--violet-fg)"
-                  />
-                  <div className="mt-3">
-                    <BarList items={bySupplier.slice(0, 8)} />
-                  </div>
+                <Section title="אני חייב">
+                  {supplierTimeline.length === 0 ? (
+                    <EmptyState text="אין חשבוניות ספק פתוחות כרגע" />
+                  ) : (
+                    <Timeline items={supplierTimeline} />
+                  )}
                 </Section>
 
-                <Section title="תזרים צפוי">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <ColorCard
-                      label="כניסות צפויות"
-                      value={ils(totalDebt)}
-                      bg="var(--teal-bg)"
-                      fg="var(--teal-fg)"
-                    />
-                    <ColorCard
-                      label="יציאות צפויות"
-                      value={ils(supplierDebt)}
-                      bg="var(--violet-bg)"
-                      fg="var(--violet-fg)"
-                    />
-                  </div>
-                  <p className="tnum mt-3 text-[12.5px] text-ink-2">
+                <Section title="תזרים 30 יום">
+                  <AreaCompare
+                    a={flowIn}
+                    b={flowOut}
+                    labelA="כניסות צפויות"
+                    labelB="יציאות צפויות"
+                  />
+                  <p className="tnum mt-2 text-[12.5px] text-ink-2">
                     מאזן צפוי: {ils(totalDebt - supplierDebt)}
                   </p>
-                </Section>
-
-                <Section title="רווחיות">
-                  <EmptyState text="אין עדיין נתוני עלות. רווחיות תוצג ברגע שיוזנו חשבוניות ספק בפריוריטי" />
                 </Section>
               </>
             )}
@@ -197,27 +205,42 @@ function Finance() {
               {notInvoiced.length === 0 ? (
                 <EmptyState text="כל תעודות המשלוח חויבו. אין מה להפיק" />
               ) : (
-                <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-                  {notInvoiced.slice(0, 50).map((r, i) => (
-                    <div key={i} className="flex items-center justify-between bg-white px-3 py-2.5">
-                      <div className="min-w-0">
-                        <div className="truncate text-[14px] text-ink">{nameOf(r)}</div>
-                        <div className="tnum text-[11px] text-ink-3">
-                          תעודה {str(get(r, ["doc_no", "docno", "number", "id"]))} ·{" "}
-                          {shortDate(get(r, ["doc_date", "date"]))}
+                <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+                  {notInvoiced.slice(0, 24).map((r, i) => {
+                    const d = daysSince(get(r, ["doc_date", "date"]));
+                    return (
+                      <div
+                        key={i}
+                        className="tap rounded-[16px] border border-line bg-white px-3.5 py-3"
+                      >
+                        <div className="truncate text-[12.5px] text-ink">{nameOf(r)}</div>
+                        <div className="tnum mt-1.5 text-[19px] font-500 text-ink">
+                          {ils(num(get(r, ["sum_after", "total", "amount"])))}
+                        </div>
+                        <div
+                          className="tnum mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px]"
+                          style={{
+                            background: d > 14 ? "#FCE8ED" : "var(--surf)",
+                            color: d > 14 ? "var(--red-700)" : "var(--ink-3)",
+                          }}
+                        >
+                          לפני {int(d)} ימים
                         </div>
                       </div>
-                      <span className="tnum text-[14px] text-ink">
-                        {ils(num(get(r, ["sum_after", "total", "amount"])))}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
-              <p className="tnum mt-2 text-[11px] text-ink-3">
+              <p className="tnum mt-3 text-[11px] text-ink-3">
                 {int(notInvoiced.length)} תעודות ממתינות
               </p>
             </Section>
+
+            {canSeeProfit && (
+              <Section title="רווחיות">
+                <EmptyState text="אין עדיין נתוני עלות. מפת החום של מידה מול מרווח תוצג ברגע שיוזנו חשבוניות ספק בפריוריטי" />
+              </Section>
+            )}
           </>
         )}
       </Page>

@@ -145,15 +145,27 @@
 
 /* ============================ ברכת הדרך — design system ============================ */
 :root {
-  --coral-900: #4a1b0c;
-  --coral-800: #712b13;
-  --coral-700: #993c1d;
-  --coral-600: #d85a30;
-  --coral-500: #e8734a;
-  --coral-400: #f0997b;
-  --coral-200: #f5c4b3;
-  --coral-100: #faece7;
-  --coral-050: #fef6f1;
+  --red-900: #4a0e1f;
+  --red-800: #6b1730;
+  --red-700: #932040;
+  --red-600: #c42b4e;
+  --red-500: #e03e5f;
+  --red-400: #ee7189;
+  --red-200: #f7b8c5;
+  --red-100: #fce8ed;
+  --red-050: #fef4f6;
+
+  /* legacy aliases — same palette, kept so existing class names stay valid */
+  --coral-900: var(--red-900);
+  --coral-800: var(--red-800);
+  --coral-700: var(--red-700);
+  --coral-600: var(--red-600);
+  --coral-500: var(--red-500);
+  --coral-400: var(--red-400);
+  --coral-200: var(--red-200);
+  --coral-100: var(--red-100);
+  --coral-050: var(--red-050);
+
   --ink: #17181c;
   --ink-2: #5a5d66;
   --ink-3: #9a9da6;
@@ -170,21 +182,42 @@
   --teal-bg: #e4f4ee;
   --teal-fg: #0f6e56;
 
+  /* category reading colors — deliberately outside the brand */
+  --v-heavy: #c42b4e;
+  --v-private: #2f7db8;
+  --v-commercial: #c9a227;
+  --v-tractor: #5b8c5a;
+  --v-balloon: #8b6bb1;
+  --s-tire: #c42b4e;
+  --s-punc: #e09b3d;
+  --s-balance: #4a9baf;
+  --s-mount: #7e8ca0;
+  --s-calib: #9b6ba8;
+
   --background: #ffffff;
   --foreground: #17181c;
   --card: #ffffff;
   --card-foreground: #17181c;
   --muted: #f7f7f9;
   --muted-foreground: #5a5d66;
-  --primary: #d85a30;
+  --primary: #c42b4e;
   --primary-foreground: #ffffff;
   --border: #ededf0;
   --input: #ededf0;
-  --ring: #e8734a;
+  --ring: #e03e5f;
   --radius: 0.875rem;
 }
 
 @theme inline {
+  --color-red-900: var(--red-900);
+  --color-red-800: var(--red-800);
+  --color-red-700: var(--red-700);
+  --color-red-600: var(--red-600);
+  --color-red-500: var(--red-500);
+  --color-red-400: var(--red-400);
+  --color-red-200: var(--red-200);
+  --color-red-100: var(--red-100);
+  --color-red-050: var(--red-050);
   --color-coral-900: var(--coral-900);
   --color-coral-800: var(--coral-800);
   --color-coral-700: var(--coral-700);
@@ -202,6 +235,7 @@
   --color-up: var(--up);
   --color-down: var(--down);
   --font-sans: Heebo, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
@@ -231,27 +265,65 @@
 @utility head-grad {
   background: linear-gradient(
     180deg,
-    #ff9a78 0%,
-    #ffa98a 14%,
-    #ffbc9f 30%,
-    #fdd0b8 46%,
-    #fce2d2 62%,
-    #fdeee6 78%,
-    #fef8f4 90%,
+    #c42b4e 0%,
+    #d14263 14%,
+    #de6480 30%,
+    #e88c9f 46%,
+    #f0b3c0 62%,
+    #f7d5dd 78%,
+    #fceef1 90%,
     #ffffff 100%
   );
 }
 
 @utility coral-grad {
-  background: linear-gradient(180deg, var(--coral-500) 0%, var(--coral-600) 100%);
+  background: linear-gradient(135deg, #6b1730 0%, #c42b4e 55%, #e03e5f 100%);
+}
+
+@utility red-grad {
+  background: linear-gradient(135deg, #6b1730 0%, #c42b4e 55%, #e03e5f 100%);
 }
 
 @utility hairline {
-  border-top: 1px solid var(--line);
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent);
+  }
+}
+
+/* license-plate looking vehicle number */
+@utility plate {
+  font-family: var(--font-mono);
+  background: #f0f0f3;
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.02em;
+  font-size: 11.5px;
+  color: var(--ink);
+  display: inline-block;
+  direction: ltr;
+}
+
+@utility tap {
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+@utility section-rule {
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #6b1730 0%, #c42b4e 55%, #e03e5f 100%);
 }
 
 .skel {
-  background: linear-gradient(90deg, #f1f1f4 25%, #e7e7ec 50%, #f1f1f4 75%);
+  background: linear-gradient(90deg, var(--red-050) 25%, var(--red-100) 50%, var(--red-050) 75%);
   background-size: 200% 100%;
   animation: skel 1.4s ease-in-out infinite;
   border-radius: 8px;
@@ -262,5 +334,29 @@
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes dotpulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 125, 79, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(46, 125, 79, 0);
+  }
+}
+.dot-pulse {
+  animation: dotpulse 2.4s ease-out infinite;
+}
+
+@keyframes fadeSwap {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
   }
 }
