@@ -50,7 +50,7 @@ export const Route = createFileRoute("/sales")({
 });
 
 const vehicleKeys = ["car_num", "vehicle_no", "vehicle_number", "car_number", "regnum"];
-const serviceKeys = ["service", "service_name", "pdes", "description"];
+const serviceKeys = ["family_desc", "category", "part_des"];
 
 type SplitBy = "class" | "service" | "brand" | "size";
 
@@ -76,20 +76,32 @@ function Sales() {
     );
   }, [sales.data, q]);
 
+  const docs = useMemo(() => {
+    const m = new Map<string, { id: string; rows: Row[]; total: number }>();
+    for (const r of rows) {
+      const id = str(get(r, ["doc_no", "doc_id", "iv_num"])) || "—";
+      const cur = m.get(id) ?? { id, rows: [], total: 0 };
+      cur.rows.push(r);
+      cur.total += amountOf(r, vat);
+      m.set(id, cur);
+    }
+    return [...m.values()].sort((a, b) => b.total - a.total);
+  }, [rows, vat]);
+
   const total = rows.reduce((s, r) => s + amountOf(r, vat), 0);
   const zero = rows.filter((r) => amountOf(r, vat) === 0);
   const discounted = rows.filter(
-    (r) => num(get(r, ["discount", "discount_amount", "percent"])) > 0,
+    (r) => num(get(r, ["doc_discount_pct", "discount", "discount_amount"])) > 0,
   );
 
   const splitKey = (r: Row) =>
     split === "class"
       ? str(get(r, ["vehicle_class"]))
       : split === "service"
-        ? str(get(r, serviceKeys))
+        ? str(r["category"])
         : split === "brand"
-          ? str(get(r, ["brand", "manufacturer"]))
-          : str(get(r, ["size", "tire_size"]));
+          ? str(r["family_desc"])
+          : str(get(r, ["part_des", "part_name"]));
 
   const splitGroups = useMemo(
     () => groupSum(rows, splitKey, (r) => amountOf(r, vat)).slice(0, 8),
@@ -97,8 +109,37 @@ function Sales() {
     [rows, split, vat],
   );
 
-  const byWeekday = useView("v_sales_by_weekday", time, { limit: 200 });
-  const byHour = useView("v_sales_by_hour", time, { limit: 500 });
+  const hourItems = useMemo(() => {
+    const m = new Map<number, { value: number; count: number }>();
+    for (const r of rows) {
+      const raw = get(r, ["signed_at", "doc_date"]);
+      const d = raw ? new Date(str(raw)) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      const cur = m.get(d.getHours()) ?? { value: 0, count: 0 };
+      cur.value += amountOf(r, vat);
+      cur.count += 1;
+      m.set(d.getHours(), cur);
+    }
+    return [...m.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([h, v]) => ({ key: `${String(h).padStart(2, "0")}:00`, ...v }));
+  }, [rows, vat]);
+
+  const weekdayItems = useMemo(() => {
+    const m = new Map<number, { value: number; count: number }>();
+    for (const r of rows) {
+      const raw = get(r, ["doc_date", "signed_at"]);
+      const d = raw ? new Date(str(raw)) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      const cur = m.get(d.getDay()) ?? { value: 0, count: 0 };
+      cur.value += amountOf(r, vat);
+      cur.count += 1;
+      m.set(d.getDay(), cur);
+    }
+    return [...m.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([n, v]) => ({ key: weekdayName(n), ...v }));
+  }, [rows, vat]);
   const owners = useMemo(
     () =>
       groupSum(
@@ -142,10 +183,10 @@ function Sales() {
             <Section first>
               <div className="grid grid-cols-3 gap-2.5">
                 <MetricCard label="סה״כ מכירות" value={ils(total)} />
-                <MetricCard label="עסקאות" value={int(rows.length)} />
+                <MetricCard label="עסקאות" value={int(docs.length)} />
                 <MetricCard
                   label="ממוצע לעסקה"
-                  value={ils(rows.length ? total / rows.length : 0)}
+                  value={ils(docs.length ? total / docs.length : 0)}
                 />
               </div>
             </Section>
@@ -168,23 +209,29 @@ function Sales() {
                 <EmptyState text="אין עסקאות בטווח שנבחר. שנה את הפילטר או בדוק מאוחר יותר" />
               ) : (
                 <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-                  {rows.slice(0, 100).map((r, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-white px-3 py-2.5">
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[14px] text-ink">{customerName(r)}</div>
-                        <div className="tnum truncate text-[11px] text-ink-3">
-                          {[
-                            shortDate(get(r, ["doc_date", "date", "created_at"])),
-                            str(get(r, vehicleKeys)),
-                            str(get(r, serviceKeys)),
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                  {docs.slice(0, 100).map((d) => {
+                    const r = d.rows[0] as Row;
+                    return (
+                      <div key={d.id} className="flex items-center gap-3 bg-white px-3 py-2.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[14px] text-ink">{customerName(r)}</div>
+                          <div className="tnum truncate text-[11px] text-ink-3">
+                            {[
+                              shortDate(get(r, ["doc_date", "date", "created_at"])),
+                              str(get(r, vehicleKeys)),
+                              d.rows
+                                .map((x) => str(get(x, serviceKeys)))
+                                .filter(Boolean)
+                                .join(", "),
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
                         </div>
+                        <span className="tnum text-[14px] text-ink">{ils(d.total)}</span>
                       </div>
-                      <span className="tnum text-[14px] text-ink">{ils(amountOf(r, vat))}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </Section>
@@ -198,8 +245,8 @@ function Sales() {
                   options={[
                     { value: "class", label: "סוג רכב" },
                     { value: "service", label: "שירות" },
-                    { value: "brand", label: "מותג" },
-                    { value: "size", label: "מידה" },
+                    { value: "brand", label: "משפחה" },
+                    { value: "size", label: "פריט" },
                   ]}
                 />
               }
@@ -222,29 +269,11 @@ function Sales() {
             </Section>
 
             <Section title="שעות פיק">
-              <BarList
-                items={groupSum(
-                  byHour.data ?? [],
-                  (r) => `${num(get(r, ["hour", "hr"]))}:00`,
-                  (r) => amountOf(r, vat),
-                ).slice(0, 8)}
-              />
+              <BarList items={hourItems} />
             </Section>
 
             <Section title="ימי שבוע">
-              <BarList
-                items={groupSum(
-                  byWeekday.data ?? [],
-                  (r) => {
-                    const raw = get(r, ["weekday", "dow", "day_of_week", "day"]);
-                    const n = num(raw);
-                    return Number.isFinite(n) && String(raw).match(/^\d+$/)
-                      ? weekdayName(n % 7)
-                      : str(raw);
-                  },
-                  (r) => amountOf(r, vat),
-                )}
-              />
+              <BarList items={weekdayItems} />
             </Section>
 
             <Section title="מי הפיק">
@@ -277,7 +306,7 @@ function Sales() {
                     <div key={i} className="flex justify-between text-[12.5px]">
                       <span className="text-ink">{customerName(r)}</span>
                       <span className="tnum text-down">
-                        {ils(num(get(r, ["discount", "discount_amount"])))}
+                        {num(get(r, ["doc_discount_pct", "discount"]))}%
                       </span>
                     </div>
                   ))}
