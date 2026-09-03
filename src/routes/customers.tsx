@@ -36,7 +36,8 @@ export const Route = createFileRoute("/customers")({
   ),
 });
 
-export const custId = (c: Row) => str(get(c, ["customer_id", "custname", "cust_id", "id"]));
+export const custId = (c: Row) =>
+  str(get(c, ["customer_key", "customer_id", "custname", "cust_id", "id"]));
 export const lifetime = (c: Row) => num(get(c, ["lifetime_net", "lifetime", "total_net"]));
 export const visitsOf = (c: Row) => num(get(c, ["visits", "visit_count"]));
 export const debtOf = (c: Row) => num(get(c, ["debt", "open_balance", "balance", "obligo"]));
@@ -156,7 +157,7 @@ function Customers() {
                     <Link
                       key={i}
                       to="/customers/$id"
-                      params={{ id: custId(c) || customerName(c) }}
+                      params={{ id: encodeURIComponent(custId(c) || customerName(c)) }}
                       className="flex items-center gap-3 bg-white px-3 py-2.5 hover:bg-coral-050"
                     >
                       <Avatar initials={initials(customerName(c))} />
@@ -190,7 +191,7 @@ function Customers() {
                           <Link
                             key={`${custId(child)}-${index}`}
                             to="/customers/$id"
-                            params={{ id: custId(child) || customerName(child) }}
+                            params={{ id: encodeURIComponent(custId(child) || customerName(child)) }}
                             className="flex min-h-9 items-center justify-between gap-3 border-b border-line/70 py-2 text-[12.5px] last:border-0 hover:text-red-700"
                           >
                             <span className="truncate">{customerName(child)}</span>
