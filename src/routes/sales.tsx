@@ -9,6 +9,7 @@ import {
   IconUserCheck,
   IconAlertTriangle,
   IconDiscount2,
+  IconCalendarStats,
 } from "@tabler/icons-react";
 import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
 import {
@@ -39,6 +40,22 @@ import { useView } from "@/lib/hooks";
 import { usePrefs } from "@/lib/prefs";
 import { exportExcel } from "@/lib/export";
 import { ils, int, shortDate, weekdayName } from "@/lib/format";
+
+const MONTHS = [
+  "ינואר",
+  "פברואר",
+  "מרץ",
+  "אפריל",
+  "מאי",
+  "יוני",
+  "יולי",
+  "אוגוסט",
+  "ספטמבר",
+  "אוקטובר",
+  "נובמבר",
+  "דצמבר",
+];
+const monthName = (i: number) => MONTHS[i] ?? String(i + 1);
 
 export const Route = createFileRoute("/sales")({
   head: () => ({
@@ -72,6 +89,44 @@ function Sales() {
   const [q, setQ] = useState("");
   const [split, setSplit] = useState<SplitBy>("class");
   const sales = useView("v_sales", time, { limit: 5000 });
+  const yearly = useView("v_sales", "all", { limit: 20000 });
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+
+  const years = useMemo(() => {
+    const set = new Set<number>();
+    for (const r of yearly.data ?? []) {
+      const raw = get(r, ["doc_date", "signed_at"]);
+      const d = raw ? new Date(str(raw)) : null;
+      if (d && !Number.isNaN(d.getTime())) set.add(d.getFullYear());
+    }
+    return [...set].sort((a, b) => b - a);
+  }, [yearly.data]);
+
+  const monthly = useMemo(() => {
+    const m = new Map<number, { net: number; gross: number; docs: Set<string> }>();
+    for (const r of yearly.data ?? []) {
+      const raw = get(r, ["doc_date", "signed_at"]);
+      const d = raw ? new Date(str(raw)) : null;
+      if (!d || Number.isNaN(d.getTime()) || d.getFullYear() !== year) continue;
+      const cur = m.get(d.getMonth()) ?? { net: 0, gross: 0, docs: new Set<string>() };
+      cur.net += num(get(r, ["amount_net", "line_sum"]));
+      cur.gross += num(get(r, ["amount_gross"])) || num(get(r, ["amount_net", "line_sum"])) * 1.18;
+      cur.docs.add(str(get(r, ["doc_no", "doc_id", "iv_num"])));
+      m.set(d.getMonth(), cur);
+    }
+    return Array.from({ length: 12 }, (_, i) => ({
+      month: i,
+      net: m.get(i)?.net ?? 0,
+      gross: m.get(i)?.gross ?? 0,
+      docs: m.get(i)?.docs.size ?? 0,
+    }));
+  }, [yearly.data, year]);
+
+  const yearTotals = monthly.reduce(
+    (a, m) => ({ net: a.net + m.net, gross: a.gross + m.gross, docs: a.docs + m.docs }),
+    { net: 0, gross: 0, docs: 0 },
+  );
+  const maxMonth = Math.max(...monthly.map((m) => m.net), 1);
 
   const rows = useMemo(() => {
     const all = sales.data ?? [];
@@ -387,6 +442,101 @@ function Sales() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </Section>
+
+            <Section
+              title="סיכום שנתי"
+              icon={<IconCalendarStats size={15} stroke={1.6} />}
+              action={
+                years.length > 0 && (
+                  <div className="inline-flex rounded-full bg-[#F4F4F7] p-[3px]">
+                    {years.slice(0, 4).map((y) => (
+                      <button
+                        key={y}
+                        onClick={() => setYear(y)}
+                        className={`tnum rounded-full px-3 py-1 text-[10.5px] transition-all ${
+                          year === y ? "red-grad font-500 text-white" : "text-ink-3 hover:text-ink-2"
+                        }`}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                  </div>
+                )
+              }
+            >
+              {yearly.isLoading ? (
+                <SkeletonBlock rows={4} />
+              ) : yearTotals.net === 0 ? (
+                <EmptyState text={`אין נתוני מכירות לשנת ${year}`} />
+              ) : (
+                <div className="-mx-1 overflow-x-auto">
+                  <table className="w-full min-w-[520px] border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="border-b border-line px-3 pb-2.5 text-right text-[10.5px] font-400 text-ink-3">
+                          חודש
+                        </th>
+                        <th className="border-b border-line px-3 pb-2.5 text-right text-[10.5px] font-400 text-ink-3">
+                          עסקאות
+                        </th>
+                        <th className="border-b border-line px-3 pb-2.5 text-right text-[10.5px] font-400 text-ink-3">
+                          ללא מע״מ
+                        </th>
+                        <th className="border-b border-line px-3 pb-2.5 text-right text-[10.5px] font-400 text-ink-3">
+                          כולל מע״מ
+                        </th>
+                        <th className="w-[34%] border-b border-line px-3 pb-2.5 text-right text-[10.5px] font-400 text-ink-3">
+                          יחסי
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthly.map((m) => (
+                        <tr key={m.month} className={m.net === 0 ? "opacity-45" : "hover:bg-[#FCFCFD]"}>
+                          <td className="border-b border-line px-3 py-2.5 text-[13px]">
+                            {monthName(m.month)}
+                          </td>
+                          <td className="tnum border-b border-line px-3 py-2.5 text-[12.5px] text-ink-2">
+                            {m.docs ? int(m.docs) : "—"}
+                          </td>
+                          <td className="tnum border-b border-line px-3 py-2.5 text-[13.5px] font-500">
+                            {m.net ? ils(m.net) : "—"}
+                          </td>
+                          <td className="tnum border-b border-line px-3 py-2.5 text-[13px] text-ink-2">
+                            {m.gross ? ils(m.gross) : "—"}
+                          </td>
+                          <td className="border-b border-line px-3 py-2.5">
+                            <span className="block h-1.5 overflow-hidden rounded-full bg-[#F4F4F7]">
+                              <span
+                                className="block h-full rounded-full transition-[width] duration-[400ms]"
+                                style={{
+                                  width: `${(m.net / maxMonth) * 100}%`,
+                                  background:
+                                    "linear-gradient(90deg,var(--red-600),rgba(196,43,78,.45))",
+                                }}
+                              />
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-red-050">
+                        <td className="px-3 py-3 text-[13.5px] font-500">סה״כ {year}</td>
+                        <td className="tnum px-3 py-3 text-[13px] font-500">
+                          {int(yearTotals.docs)}
+                        </td>
+                        <td className="tnum px-3 py-3 text-[15px] font-500 text-red-700">
+                          {ils(yearTotals.net)}
+                        </td>
+                        <td className="tnum px-3 py-3 text-[13.5px] font-500 text-ink-2">
+                          {ils(yearTotals.gross)}
+                        </td>
+                        <td />
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               )}
             </Section>
