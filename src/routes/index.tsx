@@ -394,7 +394,9 @@ function ClassSplit({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
                 style={{ background: colorOf(g.key, i) }}
               />
               <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
-              <span className="tnum text-ink-3">{Math.round((g.value / total) * 100)}%</span>
+              <span className="tnum text-ink-3">
+                <AnimatedInt value={(g.value / total) * 100} />%
+              </span>
               <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
             </div>
           ))}
@@ -435,7 +437,7 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
           <div key={g.key}>
             <div className="mb-1 flex items-center justify-between text-[12.5px]">
               <span className="text-ink">{g.key}</span>
-              <span className="tnum text-ink-2">{ils(g.value)}</span>
+              <AnimatedMoney value={g.value} className="text-ink-2" />
             </div>
             <Bar value={g.value} max={max} color={tones[i % tones.length] ?? "var(--red-500)"} />
           </div>
@@ -557,6 +559,7 @@ function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) 
               </span>
             ),
             value: ils(amountOf(r, vat)),
+            numericValue: amountOf(r, vat),
           };
         })}
       />

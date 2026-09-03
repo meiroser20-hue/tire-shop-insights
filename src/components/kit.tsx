@@ -164,6 +164,7 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
 /* ---------------------------------- bits --------------------------------- */
 
 export function Delta({ value, small }: { value: number | null; small?: boolean }) {
+  const animated = useCountUp(value ?? 0);
   if (value === null || !Number.isFinite(value)) return null;
   const up = value >= 0;
   return (
@@ -172,7 +173,7 @@ export function Delta({ value, small }: { value: number | null; small?: boolean 
         up ? "text-up" : "text-down"
       } ${small ? "" : up ? "bg-[#E4F4EE]" : "bg-[#FBE9E9]"}`}
     >
-      {up ? "▲" : "▼"} {pct(Math.abs(value) * (up ? 1 : -1)).replace("-", "")}
+      {up ? "▲" : "▼"} {pct(Math.abs(animated) * (up ? 1 : -1)).replace("-", "")}
     </span>
   );
 }
@@ -558,27 +559,56 @@ export function VolumeChips({
 export function Timeline({
   items,
 }: {
-  items: Array<{ key: string; time: string; title: ReactNode; sub?: ReactNode; value?: string }>;
+  items: Array<{
+    key: string;
+    time: string;
+    title: ReactNode;
+    sub?: ReactNode;
+    value?: string;
+    numericValue?: number;
+  }>;
 }) {
   return (
     <div className="relative pr-4">
       <span className="absolute bottom-2 right-[5px] top-2 w-px bg-line" />
       <div className="space-y-4">
         {items.map((it) => (
-          <div key={it.key} className="relative">
-            <span className="absolute -right-4 top-1.5 size-[11px] rounded-full border-2 border-white bg-red-500" />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="tnum text-[10.5px] text-ink-3">{it.time}</div>
-                <div className="mt-0.5 truncate text-[14px] text-ink">{it.title}</div>
-                {it.sub && <div className="mt-0.5 text-[11px] text-ink-3">{it.sub}</div>}
-              </div>
-              {it.value && <span className="tnum text-[14px] text-ink">{it.value}</span>}
-            </div>
-          </div>
+          <TimelineItem key={it.key} item={it} />
         ))}
       </div>
     </div>
+  );
+}
+
+function TimelineItem({
+  item,
+}: {
+  item: {
+    key: string;
+    time: string;
+    title: ReactNode;
+    sub?: ReactNode;
+    value?: string;
+    numericValue?: number;
+  };
+}) {
+  const animated = useCountUp(item.numericValue ?? 0);
+  return (
+          <div className="relative">
+            <span className="absolute -right-4 top-1.5 size-[11px] rounded-full border-2 border-white bg-red-500" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="tnum text-[10.5px] text-ink-3">{item.time}</div>
+                <div className="mt-0.5 truncate text-[14px] text-ink">{item.title}</div>
+                {item.sub && <div className="mt-0.5 text-[11px] text-ink-3">{item.sub}</div>}
+              </div>
+              {item.value && (
+                <span className="tnum text-[14px] text-ink">
+                  {item.numericValue === undefined ? item.value : ils(animated)}
+                </span>
+              )}
+            </div>
+          </div>
   );
 }
 
