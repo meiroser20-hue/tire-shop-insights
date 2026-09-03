@@ -34,12 +34,17 @@ export const Route = createFileRoute("/inventory")({
   ),
 });
 
-const sizeK = ["size", "tire_size", "measure"];
-const brandK = ["brand", "manufacturer", "maker"];
-const balK = ["balance", "qty", "quantity", "on_hand", "stock"];
+const partK = ["part_name", "sku", "catalog"];
+const desK = ["part_des", "description"];
+const whK = ["warehouse", "wh"];
+const balK = ["balance", "bal_now", "qty", "quantity", "on_hand"];
 const daysK = ["days_to_zero", "days_left"];
-const rateK = ["rate", "daily_rate", "velocity", "avg_daily"];
-const valueK = ["value", "stock_value", "amount"];
+const rateK = ["daily_burn", "rate", "avg_daily"];
+const idleK = ["days_since_move"];
+
+const itemKey = (r: Row) => `${str(get(r, partK))}|${str(get(r, whK))}`;
+const itemTitle = (r: Row) => str(get(r, desK)) || str(get(r, partK)) || "פריט";
+const DEAD_DAYS = 90;
 
 type View = "all" | "soon" | "dead";
 
@@ -53,41 +58,40 @@ function Inventory() {
   const fMap = useMemo(() => {
     const m = new Map<string, Row>();
     for (const r of forecast.data ?? []) {
-      m.set(`${str(get(r, sizeK))}|${str(get(r, brandK))}`, r);
+      m.set(itemKey(r), r);
     }
     return m;
   }, [forecast.data]);
 
-  const deadKeys = useMemo(
-    () => new Set((dead.data ?? []).map((r) => `${str(get(r, sizeK))}|${str(get(r, brandK))}`)),
-    [dead.data],
-  );
+  const deadRows = useMemo(() => {
+    const explicit = dead.data ?? [];
+    if (explicit.length) return explicit;
+    return (stock.data ?? []).filter((r) => num(get(r, idleK)) >= DEAD_DAYS);
+  }, [dead.data, stock.data]);
+
+  const deadKeys = useMemo(() => new Set(deadRows.map(itemKey)), [deadRows]);
 
   const soonCount = (forecast.data ?? []).filter((r) => {
     const d = num(get(r, daysK));
     return d > 0 && d <= 7;
   }).length;
 
-  const stuckValue = (dead.data ?? []).reduce((s, r) => s + num(get(r, valueK)), 0);
+  const stuckUnits = deadRows.reduce((s, r) => s + num(get(r, balK)), 0);
 
   const rows = useMemo(() => {
     let list = stock.data ?? [];
     if (view === "dead")
-      list = list.filter((r) => deadKeys.has(`${str(get(r, sizeK))}|${str(get(r, brandK))}`));
+      list = list.filter((r) => deadKeys.has(itemKey(r)));
     if (view === "soon")
       list = list.filter((r) => {
-        const f = fMap.get(`${str(get(r, sizeK))}|${str(get(r, brandK))}`);
+        const f = fMap.get(itemKey(r));
         const d = f ? num(get(f, daysK)) : 0;
         return d > 0 && d <= 7;
       });
     const t = term.trim();
     if (t)
       list = list.filter((r) =>
-        [
-          str(get(r, sizeK)),
-          str(get(r, brandK)),
-          str(get(r, ["sku", "part", "partname", "catalog"])),
-        ]
+        [itemTitle(r), str(get(r, partK)), str(get(r, ["family_desc"]))]
           .join(" ")
           .includes(t),
       );
@@ -98,8 +102,8 @@ function Inventory() {
     () =>
       groupSum(
         stock.data ?? [],
-        (r) => str(get(r, ["supplier", "vendor"])) || "ללא ספק",
-        (r) => num(get(r, valueK)),
+        (r) => str(get(r, ["family_desc", "family_name"])) || "ללא משפחה",
+        (r) => num(get(r, balK)),
       ),
     [stock.data],
   );
@@ -120,10 +124,12 @@ function Inventory() {
     exportExcel(
       "מלאי",
       rows.map((r) => ({
-        מידה: str(get(r, sizeK)),
-        מותג: str(get(r, brandK)),
+        מק״ט: str(get(r, partK)),
+        תיאור: str(get(r, desK)),
+        מחסן: str(get(r, whK)),
+        משפחה: str(get(r, ["family_desc"])),
         יתרה: num(get(r, balK)),
-        "תנועה אחרונה": shortDate(get(r, ["last_movement", "last_date", "updated_at"])),
+        "תנועה אחרונה": shortDate(get(r, ["last_move"])),
       })),
       "מלאי",
     );
@@ -148,10 +154,10 @@ function Inventory() {
                   <MetricCard label="ייגמר השבוע" value={int(soonCount)} sub="פריטים" />
                 </button>
                 <button onClick={() => setView("dead")} className="text-right">
-                  <MetricCard label="מלאי מת" value={int((dead.data ?? []).length)} sub="פריטים" />
+                  <MetricCard label="מלאי מת" value={int(deadRows.length)} sub={`ללא תנועה ${DEAD_DAYS}+ יום`} />
                 </button>
                 <button onClick={() => setView("all")} className="text-right">
-                  <MetricCard label="שווי תקוע" value={ils(stuckValue)} sub="כל המלאי" />
+                  <MetricCard label="יחידות תקועות" value={int(stuckUnits)} sub="במלאי מת" />
                 </button>
               </div>
             </Section>
@@ -166,7 +172,7 @@ function Inventory() {
                 <input
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
-                  placeholder="חיפוש מידה, מותג או מק״ט"
+                  placeholder="חיפוש מק״ט, תיאור או משפחה"
                   className="h-11 w-full rounded-[14px] border border-line bg-white pr-9 pl-3 text-[14px] outline-none focus:border-coral-400"
                 />
               </div>
@@ -176,19 +182,19 @@ function Inventory() {
                 <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
                   {rows.slice(0, 150).map((r, i) => {
                     const bal = num(get(r, balK));
-                    const f = fMap.get(`${str(get(r, sizeK))}|${str(get(r, brandK))}`);
+                    const f = fMap.get(itemKey(r));
                     const days = f ? num(get(f, daysK)) : 0;
                     const color =
                       bal <= 3 ? "text-coral-600" : bal <= 8 ? "text-[#8A5A0B]" : "text-ink";
                     return (
                       <div key={i} className="flex items-center gap-3 bg-white px-3 py-2.5">
                         <div className="min-w-0 flex-1">
-                          <div className="tnum truncate text-[14px] text-ink" dir="ltr">
-                            {str(get(r, sizeK))} {str(get(r, brandK))}
-                          </div>
+                          <div className="truncate text-[14px] text-ink">{itemTitle(r)}</div>
                           <div className="tnum truncate text-[11px] text-ink-3">
-                            תנועה אחרונה{" "}
-                            {shortDate(get(r, ["last_movement", "last_date", "updated_at"]))}
+                            {[str(get(r, whK)), str(get(r, ["family_desc"]))]
+                              .filter(Boolean)
+                              .join(" · ")}{" "}
+                            · תנועה אחרונה {shortDate(get(r, ["last_move"]))}
                             {f && num(get(f, rateK))
                               ? ` · ${num(get(f, rateK)).toFixed(1)} ליום`
                               : ""}
@@ -217,15 +223,14 @@ function Inventory() {
                       key={i}
                       className="tnum rounded-full bg-coral-100 px-3 py-1.5 text-[11px] text-coral-800"
                     >
-                      {str(get(r, sizeK))} {str(get(r, brandK))} · בעוד {int(num(get(r, daysK)))}{" "}
-                      ימים
+                      {itemTitle(r)} · בעוד {int(num(get(r, daysK)))} ימים
                     </span>
                   ))}
                 </div>
               )}
             </Section>
 
-            <Section title="פילוח לפי ספק">
+            <Section title="יתרות לפי משפחה">
               <BarList items={suppliers.slice(0, 8)} />
             </Section>
           </>
