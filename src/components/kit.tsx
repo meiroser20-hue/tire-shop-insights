@@ -252,6 +252,7 @@ export function Bar({ value, max, color }: { value: number; max: number; color?:
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-surf">
       <div
+        title={ils(value)}
         className="h-full rounded-full transition-[width] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
         style={{ width: `${w}%`, background: color ?? "var(--red-500)" }}
       />
@@ -367,6 +368,7 @@ export function Sparkline({
   const last = coords[coords.length - 1]?.split(",") ?? ["0", "0"];
   return (
     <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" className="h-11 w-full">
+      <title>{`מגמה: ${points.map((point) => ils(point)).join(" · ")}`}</title>
       <polyline
         points={coords.join(" ")}
         fill="none"
@@ -408,6 +410,7 @@ export function ColumnChart({
               </>
             )}
             <div
+              title={`${labelOf ? labelOf(k) : String(k)} · ${valueFmt?.(v) ?? int(v)}`}
               className="w-full rounded-t-[6px] transition-[height] duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
               style={{
                 height: `${Math.max(4, ratio * 82)}px`,
@@ -472,26 +475,43 @@ export function RankedList({
   return (
     <div className="space-y-3">
       {items.map((it, i) => (
-        <div key={it.key} className="flex items-center gap-3">
+        <RankedItem key={it.key} item={it} index={i} max={max} medal={medals[i]} />
+      ))}
+    </div>
+  );
+}
+
+function RankedItem({
+  item,
+  index,
+  max,
+  medal,
+}: {
+  item: { key: string; label: ReactNode; value: number; valueText: string; sub?: string };
+  index: number;
+  max: number;
+  medal?: string;
+}) {
+  const animated = useCountUp(item.value);
+  return (
+        <div className="flex items-center gap-3">
           <span
             className="tnum flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-500 text-white"
-            style={{ background: medals[i] ?? "var(--ink-3)" }}
+            style={{ background: medal ?? "var(--ink-3)" }}
           >
-            {i + 1}
+            {index + 1}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-[14px] text-ink">{it.label}</span>
-              <span className="tnum shrink-0 text-[13px] text-ink-2">{it.valueText}</span>
+              <span className="truncate text-[14px] text-ink">{item.label}</span>
+              <span className="tnum shrink-0 text-[13px] text-ink-2">{ils(animated)}</span>
             </div>
             <div className="mt-1.5">
-              <Bar value={it.value} max={max} />
+              <Bar value={item.value} max={max} />
             </div>
-            {it.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{it.sub}</div>}
+            {item.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{item.sub}</div>}
           </div>
         </div>
-      ))}
-    </div>
   );
 }
 

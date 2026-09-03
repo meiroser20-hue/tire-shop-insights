@@ -138,7 +138,7 @@ function Customers() {
               {rows.length === 0 ? (
                 <EmptyState text="לא נמצאו לקוחות שתואמים לחיפוש" />
               ) : (
-                <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line lg:grid lg:grid-cols-2 lg:divide-y-0 lg:gap-px lg:bg-line">
+                <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
                   {rows.slice(0, 200).map((c, i) => (
                     <Link
                       key={i}
