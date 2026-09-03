@@ -184,15 +184,15 @@
 
   /* category reading colors — deliberately outside the brand */
   --v-heavy: #c42b4e;
-  --v-private: #2f7db8;
-  --v-commercial: #c9a227;
-  --v-tractor: #5b8c5a;
-  --v-balloon: #8b6bb1;
+  --v-private: #6e4e8e;
+  --v-commercial: #c1783d;
+  --v-tractor: #4f7a6b;
+  --v-balloon: #a8556e;
   --s-tire: #c42b4e;
-  --s-punc: #e09b3d;
-  --s-balance: #4a9baf;
-  --s-mount: #7e8ca0;
-  --s-calib: #9b6ba8;
+  --s-punc: #d07a4a;
+  --s-balance: #7e5a96;
+  --s-mount: #9c8290;
+  --s-calib: #5e8b7e;
 
   --background: #ffffff;
   --foreground: #17181c;
@@ -307,9 +307,16 @@
 }
 
 @utility section-rule {
-  width: 3px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #6b1730 0%, #c42b4e 55%, #e03e5f 100%);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #f8f8fa;
+  color: #b4b7be;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex: none;
 }
 
 @utility app-surface {
