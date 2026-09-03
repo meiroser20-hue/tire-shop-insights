@@ -594,21 +594,21 @@ function TimelineItem({
 }) {
   const animated = useCountUp(item.numericValue ?? 0);
   return (
-          <div className="relative">
-            <span className="absolute -right-4 top-1.5 size-[11px] rounded-full border-2 border-white bg-red-500" />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="tnum text-[10.5px] text-ink-3">{item.time}</div>
-                <div className="mt-0.5 truncate text-[14px] text-ink">{item.title}</div>
-                {item.sub && <div className="mt-0.5 text-[11px] text-ink-3">{item.sub}</div>}
-              </div>
-              {item.value && (
-                <span className="tnum text-[14px] text-ink">
-                  {item.numericValue === undefined ? item.value : ils(animated)}
-                </span>
-              )}
-            </div>
-          </div>
+    <div className="relative">
+      <span className="absolute -right-4 top-1.5 size-[11px] rounded-full border-2 border-white bg-red-500" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="tnum text-[10.5px] text-ink-3">{item.time}</div>
+          <div className="mt-0.5 truncate text-[14px] text-ink">{item.title}</div>
+          {item.sub && <div className="mt-0.5 text-[11px] text-ink-3">{item.sub}</div>}
+        </div>
+        {item.value && (
+          <span className="tnum text-[14px] text-ink">
+            {item.numericValue === undefined ? item.value : ils(animated)}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
