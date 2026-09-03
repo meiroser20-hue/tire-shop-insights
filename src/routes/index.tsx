@@ -208,12 +208,12 @@ function Home() {
           <>
             <Metrics rows={rows} prevRows={prev.data ?? []} />
 
-            <div className="grid gap-x-6 lg:grid-cols-[2fr_1fr]">
+            <div className="grid gap-x-8 lg:grid-cols-[2fr_1fr]">
               <HourlySection rows={hours.data ?? []} range={hoursRange} onRange={setHoursRange} />
               <ClassSplit rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
             </div>
 
-            <div className="grid gap-x-6 lg:grid-cols-[1fr_1.35fr]">
+            <div className="grid gap-x-8 lg:grid-cols-[1fr_1.35fr]">
               <ServiceMix rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
               <TopCustomers
                 rows={topCustomers.data ?? []}
@@ -222,7 +222,7 @@ function Home() {
               />
             </div>
 
-            <div className="grid gap-x-6 lg:grid-cols-2">
+            <div className="grid gap-x-8 lg:grid-cols-2">
               <TopBrands rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
               <TopSizes rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
             </div>
@@ -231,7 +231,7 @@ function Home() {
           </>
         )}
 
-        <div className="grid gap-x-6 lg:grid-cols-2">
+        <div className="grid gap-x-8 lg:grid-cols-2">
           <FinanceStrip />
           <StockStrip />
         </div>
@@ -265,7 +265,7 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
 
   return (
     <Section first>
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <GlassMetric
           label="משא כבד"
           value={ils(sum(heavy))}
@@ -709,7 +709,7 @@ function FinanceStrip() {
       icon={<IconCoins size={15} stroke={1.6} />}
       action={<RangePicker range={financeRange} onRange={setFinanceRange} />}
     >
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-3">
         <ColorCard
           label="חייבים לי"
           value={ils(openSum)}
