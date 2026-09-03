@@ -50,9 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-white lg:flex lg:flex-row-reverse">
+    <div className="min-h-screen bg-white">
       <DesktopNav />
-      <main className="min-w-0 flex-1 pb-28 lg:pb-10">{children}</main>
+      <main className="app-surface min-h-screen min-w-0 pb-28 lg:mr-[252px] lg:pb-10">{children}</main>
       <MobileNav />
     </div>
   );
@@ -74,7 +74,7 @@ export function ScreenHeader({
 
   return (
     <div className="head-grad px-4 pb-6 pt-5 lg:px-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1360px]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[11px] text-coral-800/70">{longDate()}</div>
@@ -135,7 +135,7 @@ function MenuItem({
 }
 
 export function Page({ children }: { children: ReactNode }) {
-  return <div className="mx-auto max-w-6xl px-4 lg:px-8">{children}</div>;
+  return <div className="mx-auto max-w-[1360px] px-4 lg:px-8">{children}</div>;
 }
 
 /* ----------------------------------- nav --------------------------------- */
@@ -144,20 +144,25 @@ function DesktopNav() {
   const isActive = useActive();
   const { profile, signOut } = useAuth();
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-l border-line bg-white px-3 py-5 lg:flex">
-      <div className="mb-6 flex items-center gap-2.5 px-2">
-        <div className="coral-grad flex size-9 items-center justify-center rounded-full text-[12.5px] font-600 text-white">
+    <aside className="fixed bottom-0 right-0 top-0 z-40 hidden w-[252px] flex-col border-l border-black/[.06] bg-white px-[14px] py-6 lg:flex">
+      <div className="mb-7 flex items-center gap-3 px-2">
+        <div className="coral-grad flex size-7 items-center justify-center rounded-full text-[10px] font-600 text-white">
           ב״ד
         </div>
-        <div className="text-[14px] font-600 text-ink">ברכת הדרך</div>
+        <div>
+          <div className="text-[15px] font-600 text-ink">ברכת הדרך</div>
+          <div className="text-[11px] text-ink-3">ניהול חכם</div>
+        </div>
       </div>
       <nav className="flex-1 space-y-1">
         {NAV.map(({ to, label, Icon }) => (
           <Link
             key={to}
             to={to}
-            className={`flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 text-[14px] transition-colors ${
-              isActive(to) ? "bg-coral-100 font-500 text-coral-700" : "text-ink-2 hover:bg-surf"
+            className={`relative flex h-[42px] items-center gap-3 rounded-[10px] px-3 text-[14px] transition-colors duration-150 ${
+              isActive(to)
+                ? "bg-red-050 font-500 text-red-700 after:absolute after:bottom-2 after:right-0 after:top-2 after:w-[3px] after:rounded-full after:bg-red-600"
+                : "text-ink-2 hover:bg-[#FAFAFB]"
             }`}
           >
             <Icon size={18} stroke={1.5} />
@@ -208,19 +213,16 @@ function MobileNav() {
           </div>
         </>
       )}
-      <nav className="fixed inset-x-0 bottom-4 z-50 flex justify-center lg:hidden">
-        <div
-          className="flex items-center gap-0.5 rounded-full p-1.5"
-          style={{ background: "rgba(23,24,28,.9)", backdropFilter: "blur(18px)" }}
-        >
+      <nav className="fixed bottom-[18px] left-1/2 z-50 -translate-x-1/2 lg:hidden">
+        <div className="mobile-dock flex items-center gap-0.5 rounded-full p-[7px]">
           {main.map(({ to, label, Icon }) => {
             const active = isActive(to);
             return (
               <Link
                 key={to}
                 to={to}
-                className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-full transition-all ${
-                  active ? "w-[74px] bg-white text-coral-600" : "w-[52px] text-white/70"
+                className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-[260ms] ease-[cubic-bezier(.34,1.4,.64,1)] ${
+                  active ? "red-grad w-20 text-white" : "w-[52px] text-[#8E9199]"
                 }`}
               >
                 <Icon size={18} stroke={1.5} />
@@ -230,8 +232,10 @@ function MobileNav() {
           })}
           <button
             onClick={() => setMore((m) => !m)}
-            className={`flex h-11 w-[52px] flex-col items-center justify-center gap-0.5 rounded-full ${
-              rest.some((r) => isActive(r.to)) ? "bg-white text-coral-600" : "text-white/70"
+              className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-[260ms] ease-[cubic-bezier(.34,1.4,.64,1)] ${
+                rest.some((r) => isActive(r.to))
+                  ? "red-grad w-20 text-white"
+                  : "w-[52px] text-[#8E9199]"
             }`}
           >
             <IconDotsCircleHorizontal size={18} stroke={1.5} />
