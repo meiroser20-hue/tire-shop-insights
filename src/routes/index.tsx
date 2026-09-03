@@ -556,6 +556,7 @@ function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) 
 /* -------------------------------- finance ------------------------------- */
 
 function FinanceStrip() {
+  const [financeRange, setFinanceRange] = useState<TimeKey>("today");
   const q = useView("customer_obligo", null, { limit: 2000 });
   if (q.isLoading)
     return (
@@ -575,6 +576,7 @@ function FinanceStrip() {
 
   return (
     <Section title="כספים">
+      <RangePicker range={financeRange} onRange={setFinanceRange} />
       <div className="grid grid-cols-3 gap-2.5">
         <ColorCard
           label="חייבים לי"
