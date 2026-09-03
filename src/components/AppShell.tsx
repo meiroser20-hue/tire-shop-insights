@@ -15,6 +15,7 @@ import {
   IconDotsCircleHorizontal,
 } from "@tabler/icons-react";
 import { useAuth } from "@/lib/auth";
+import { LOGO_URL, displayName } from "@/lib/brand";
 import { longDate } from "@/lib/format";
 
 const NAV = [
@@ -25,6 +26,28 @@ const NAV = [
   { to: "/finance", label: "כספים", Icon: IconCoins },
   { to: "/reports", label: "דוחות", Icon: IconFileAnalytics },
 ] as const;
+
+/** הלוגו בעיגול בהיר — משמש גם בסרגל הדסקטופ וגם בכותרת המובייל. */
+function LogoBadge({ size = 36, className = "" }: { size?: number; className?: string }) {
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`}
+      style={{
+        width: size,
+        height: size,
+        background: "#F1F1F4",
+        border: "1px solid rgba(23,24,28,.08)",
+      }}
+    >
+      <img
+        src={LOGO_URL}
+        alt="ברכת הדרך"
+        className="size-full object-contain"
+        style={{ padding: Math.round(size * 0.16) }}
+      />
+    </span>
+  );
+}
 
 function useActive() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -80,7 +103,7 @@ export function ScreenHeader({
   subtitle?: ReactNode;
   children?: ReactNode;
 }) {
-  const { profile, signOut } = useAuth();
+  const { profile, session, signOut } = useAuth();
   const [menu, setMenu] = useState(false);
 
   return (
@@ -103,11 +126,14 @@ export function ScreenHeader({
             >
               <IconDots size={19} stroke={1.5} />
             </button>
+            <LogoBadge size={34} className="ms-1 lg:hidden" />
             {menu && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setMenu(false)} />
                 <div className="absolute left-0 top-11 z-30 w-48 overflow-hidden rounded-[14px] border border-line bg-white py-1 shadow-[0_10px_30px_rgba(0,0,0,.18)]">
-                  <div className="px-3 py-2 text-[11px] text-ink-3">{profile?.full_name}</div>
+                  <div className="px-3 py-2 text-[11px] text-ink-3">
+                    {displayName(profile?.full_name, session?.user.email) ?? "משתמש"}
+                  </div>
                   <MenuItem Icon={IconSettings} label="הגדרות" />
                   <MenuItem Icon={IconDatabaseCog} label="איכות נתונים" />
                   <MenuItem Icon={IconLogout} label="התנתקות" onClick={() => void signOut()} />
@@ -150,13 +176,11 @@ export function Page({ children }: { children: ReactNode }) {
 
 function DesktopNav() {
   const isActive = useActive();
-  const { profile, signOut } = useAuth();
+  const { profile, session, signOut } = useAuth();
   return (
     <aside className="fixed bottom-3 right-3 top-3 z-40 hidden w-[236px] flex-col px-3 py-5 lg:flex">
       <div className="mb-8 flex items-center gap-3 px-2">
-        <div className="flex size-8 items-center justify-center rounded-[10px] bg-white/[.12] text-[10px] font-600 text-white">
-          ב״ד
-        </div>
+        <LogoBadge size={38} />
         <div>
           <div className="text-[15px] font-600 text-white">ברכת הדרך</div>
           <div className="text-[10.5px] text-white/45">ניהול חכם</div>
@@ -192,11 +216,11 @@ function DesktopNav() {
         <div className="mb-2 px-3 text-[9.5px] tracking-[.14em] text-white/35">חשבון</div>
         <div className="flex items-center gap-3 px-2">
           <div className="flex size-9 items-center justify-center rounded-full bg-white/[.12] text-[11px] font-600 text-white">
-            {(profile?.full_name ?? "מ").slice(0, 1)}
+            {(displayName(profile?.full_name, session?.user.email) ?? "מ").slice(0, 1)}
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[13px] text-white">
-              {profile?.full_name ?? "משתמש"}
+              {displayName(profile?.full_name, session?.user.email) ?? "משתמש"}
             </div>
             <button
               onClick={() => void signOut()}
