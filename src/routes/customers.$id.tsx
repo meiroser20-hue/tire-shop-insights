@@ -37,11 +37,7 @@ export const Route = createFileRoute("/customers/$id")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => (
-    <AppShell>
-      <CustomerCard />
-    </AppShell>
-  ),
+  component: CustomerCard,
 });
 
 type Tab = "sales" | "vehicles" | "debt" | "details";
