@@ -6,6 +6,7 @@ import {
   Avatar,
   EmptyState,
   ErrorState,
+  Plate,
   Section,
   SkeletonBlock,
   TimeFilter,
@@ -71,6 +72,46 @@ function CustomerCard() {
     customerName(r) === (c ? customerName(c) : key) ||
     (!!c && !!phoneOf(c) && phoneOf(r) === phoneOf(c));
   const mySales = (sales.data ?? []).filter(matches);
+
+  const myDocs = useMemo(() => {
+    const m = new Map<
+      string,
+      {
+        id: string;
+        date: string;
+        plate: string;
+        cls: string;
+        total: number;
+        lines: Array<{ name: string; family: string; qty: number; price: number; amount: number }>;
+      }
+    >();
+    for (const r of mySales) {
+      const id = str(get(r, ["doc_no", "doc_id", "iv_num"])) || "—";
+      const cur = m.get(id) ?? {
+        id,
+        date: shortDate(get(r, ["doc_date", "date", "created_at"])),
+        plate: str(get(r, ["car_num", "vehicle_no", "vehicle_number", "regnum"])),
+        cls: str(get(r, ["vehicle_class"])),
+        total: 0,
+        lines: [],
+      };
+      const amount = amountOf(r, vat);
+      cur.total += amount;
+      cur.lines.push({
+        name:
+          str(get(r, ["part_des", "part_name", "pdes", "description"])) ||
+          str(get(r, ["family_desc", "category"])) ||
+          "פריט",
+        family: str(get(r, ["family_desc"])) || str(get(r, ["category"])),
+        qty: num(get(r, ["qty", "quantity", "tquant"])),
+        price: num(get(r, ["price"])),
+        amount,
+      });
+      m.set(id, cur);
+    }
+    return [...m.values()];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sales.data, key, c, vat]);
   const myVehicles = (vehicles.data ?? []).filter(matches);
   const myObligo = (obligo.data ?? []).filter(matches);
 
@@ -176,26 +217,57 @@ function CustomerCard() {
 
         {tab === "sales" && (
           <Section title="עסקאות">
-            <div className="mb-3">
+            <div className="mb-4">
               <TimeFilter value={time} onChange={setTime} />
             </div>
             {sales.isLoading ? (
               <SkeletonBlock rows={3} />
-            ) : mySales.length === 0 ? (
+            ) : myDocs.length === 0 ? (
               <EmptyState text="אין עסקאות ללקוח בטווח שנבחר" />
             ) : (
-              <div className="divide-y divide-line overflow-hidden rounded-[14px] border border-line">
-                {mySales.slice(0, 100).map((r, i) => (
-                  <div key={i} className="flex items-center justify-between bg-white px-3 py-2.5">
-                    <div className="min-w-0">
-                      <div className="truncate text-[14px] text-ink">
-                        {str(get(r, ["service", "pdes", "description", "category"])) || "עסקה"}
-                      </div>
-                      <div className="tnum text-[11px] text-ink-3">
-                        {shortDate(get(r, ["doc_date", "date", "created_at"]))}
-                      </div>
+              <div className="space-y-3">
+                {myDocs.map((d) => (
+                  <div key={d.id} className="overflow-hidden rounded-[16px] border border-line">
+                    <div className="flex items-center gap-3 border-b border-line bg-surf px-4 py-2.5">
+                      <span className="tnum text-[11.5px] text-ink-2">{d.date}</span>
+                      {d.plate && <Plate>{d.plate}</Plate>}
+                      {d.cls && (
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] text-red-700">
+                          {d.cls}
+                        </span>
+                      )}
+                      <span className="tnum mr-auto text-[15px] font-500 text-ink">
+                        {ils(d.total)}
+                      </span>
                     </div>
-                    <span className="tnum text-[14px] text-ink">{ils(amountOf(r, vat))}</span>
+                    <div className="bg-white">
+                      {d.lines.map((l, li) => (
+                        <div
+                          key={li}
+                          className="flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-0"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[13.5px] text-ink">{l.name}</div>
+                            {l.family && (
+                              <div className="text-[10.5px] text-ink-3">{l.family}</div>
+                            )}
+                          </div>
+                          {l.qty > 0 && (
+                            <span className="tnum shrink-0 rounded-full bg-surf px-2 py-0.5 text-[11px] text-ink-2">
+                              {int(l.qty)} יח׳
+                            </span>
+                          )}
+                          {l.price > 0 && (
+                            <span className="tnum shrink-0 text-[11px] text-ink-3">
+                              {ils(l.price)} ליח׳
+                            </span>
+                          )}
+                          <span className="tnum shrink-0 text-[13.5px] text-ink">
+                            {ils(l.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
