@@ -80,7 +80,7 @@ export function TimeFilter({
           onClick={() => onChange(o)}
           className={`rounded-full px-2.5 py-1 text-[10.5px] transition-all duration-200 ${
             value === o
-              ? "bg-white font-500 text-red-700 shadow-[0_1px_3px_rgba(0,0,0,.07)]"
+              ? "red-grad font-500 text-white shadow-[0_1px_3px_rgba(107,23,48,.22)]"
               : "text-ink-3 hover:text-ink-2"
           }`}
         >
