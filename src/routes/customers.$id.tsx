@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { IconArrowRight, IconBrandWhatsapp, IconFlag, IconPhone } from "@tabler/icons-react";
-import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
+import { Page, ScreenHeader } from "@/components/AppShell";
 import {
   Avatar,
   EmptyState,
@@ -37,11 +37,7 @@ export const Route = createFileRoute("/customers/$id")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => (
-    <AppShell>
-      <CustomerCard />
-    </AppShell>
-  ),
+  component: CustomerCard,
 });
 
 type Tab = "sales" | "vehicles" | "debt" | "details";
