@@ -107,6 +107,7 @@ function Home() {
   const [salesRange, setSalesRange] = useState<TimeKey>("today");
   const [hoursRange, setHoursRange] = useState<TimeKey>("today");
   const [mixRange, setMixRange] = useState<TimeKey>("today");
+  const [servRange, setServRange] = useState<TimeKey>("today");
   const [topCustRange, setTopCustRange] = useState<TimeKey>("month");
   const [sizesRange, setSizesRange] = useState<TimeKey>("month");
   const [recentRange, setRecentRange] = useState<TimeKey>("today");
@@ -115,6 +116,7 @@ function Home() {
   const prev = usePrevView("v_sales", salesRange);
   const hours = useView("v_sales", hoursRange, { limit: 5000 });
   const mix = useView("v_sales", mixRange, { limit: 5000 });
+  const serv = useView("v_sales", servRange, { limit: 5000 });
   const topCustomers = useView("v_sales", topCustRange, { limit: 5000 });
   const sizes = useView("v_sales", sizesRange, { limit: 5000 });
   const recent = useView("v_sales", recentRange, { limit: 5000 });
@@ -214,7 +216,7 @@ function Home() {
             </div>
 
             <div className="grid gap-x-8 lg:grid-cols-[1fr_1.35fr]">
-              <ServiceMix rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
+              <ServiceMix rows={serv.data ?? []} range={servRange} onRange={setServRange} />
               <TopCustomers
                 rows={topCustomers.data ?? []}
                 range={topCustRange}
