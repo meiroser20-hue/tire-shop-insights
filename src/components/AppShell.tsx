@@ -55,6 +55,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       style={{
         backgroundImage:
           "radial-gradient(115% 85% at 90% 8%, #8A1636 0%, transparent 55%), linear-gradient(158deg, #43101F 0%, #5C1329 45%, #2C0A15 100%)",
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
       }}
     >
       <DesktopNav />
