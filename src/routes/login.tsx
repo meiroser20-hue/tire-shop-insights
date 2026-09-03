@@ -77,13 +77,10 @@ function Login() {
         className="absolute inset-0 size-full object-cover"
         loading="eager"
       />
-      {/* צעיף בהיר — משאיר את התמונה נראית במקום להכהות אותה */}
+      {/* בלי צעיף על התמונה. רק הצללה עדינה בתחתית כדי שהשורה הלבנה תיקרא על כל רקע */}
       <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,.10) 42%, rgba(74,14,31,.22) 100%)",
-        }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[120px]"
+        style={{ background: "linear-gradient(180deg, transparent 0%, rgba(20,10,14,.30) 100%)" }}
       />
 
       <div className="relative w-full max-w-[400px]">
@@ -105,11 +102,11 @@ function Login() {
         </div>
 
         <div
-          className="px-8 pb-7 pt-16"
+          className="px-8 pb-8 pt-16"
           style={{
-            background: "rgba(255,255,255,.70)",
-            backdropFilter: "blur(26px) saturate(150%)",
-            WebkitBackdropFilter: "blur(26px) saturate(150%)",
+            background: "rgba(255,255,255,.68)",
+            backdropFilter: "blur(7px) saturate(140%)",
+            WebkitBackdropFilter: "blur(7px) saturate(140%)",
             border: "1px solid rgba(255,255,255,.85)",
             borderRadius: 30,
             boxShadow: "0 24px 70px rgba(74,14,31,.18)",
@@ -163,15 +160,18 @@ function Login() {
               {busy ? "רגע..." : "כניסה"}
             </button>
           </form>
-
-          <div
-            className="mt-6 flex items-center justify-center gap-1.5 pt-4 text-[10.5px] text-ink-3"
-            style={{ borderTop: "1px solid rgba(23,24,28,.08)" }}
-          >
-            <IconLock size={12} stroke={1.5} />
-            החיבור מוצפן ומאובטח · ברכת הדרך © 2026
-          </div>
         </div>
+      </div>
+
+      <div
+        className="absolute inset-x-0 bottom-5 flex items-center justify-center gap-1.5 text-[10.5px]"
+        style={{
+          color: "rgba(255,255,255,.78)",
+          textShadow: "0 1px 3px rgba(0,0,0,.35)",
+        }}
+      >
+        <IconLock size={12} stroke={1.5} />
+        החיבור מוצפן ומאובטח · ברכת הדרך © 2026
       </div>
     </div>
   );
