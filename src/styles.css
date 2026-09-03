@@ -145,39 +145,69 @@
 
 /* ============================ ברכת הדרך — design system ============================ */
 :root {
-  --coral-900:#4A1B0C; --coral-800:#712B13; --coral-700:#993C1D;
-  --coral-600:#D85A30; --coral-500:#E8734A; --coral-400:#F0997B;
-  --coral-200:#F5C4B3; --coral-100:#FAECE7; --coral-050:#FEF6F1;
-  --ink:#17181C; --ink-2:#5A5D66; --ink-3:#9A9DA6;
-  --line:#EDEDF0; --surf:#F7F7F9;
-  --up:#2E7D4F; --down:#C93B3B;
-  --blue-bg:#EAF1FB; --blue-fg:#1B4E8F;
-  --amber-bg:#FDF2DC; --amber-fg:#8A5A0B;
-  --violet-bg:#F1EDFB; --violet-fg:#4F3B96;
-  --teal-bg:#E4F4EE; --teal-fg:#0F6E56;
+  --coral-900: #4a1b0c;
+  --coral-800: #712b13;
+  --coral-700: #993c1d;
+  --coral-600: #d85a30;
+  --coral-500: #e8734a;
+  --coral-400: #f0997b;
+  --coral-200: #f5c4b3;
+  --coral-100: #faece7;
+  --coral-050: #fef6f1;
+  --ink: #17181c;
+  --ink-2: #5a5d66;
+  --ink-3: #9a9da6;
+  --line: #ededf0;
+  --surf: #f7f7f9;
+  --up: #2e7d4f;
+  --down: #c93b3b;
+  --blue-bg: #eaf1fb;
+  --blue-fg: #1b4e8f;
+  --amber-bg: #fdf2dc;
+  --amber-fg: #8a5a0b;
+  --violet-bg: #f1edfb;
+  --violet-fg: #4f3b96;
+  --teal-bg: #e4f4ee;
+  --teal-fg: #0f6e56;
 
-  --background:#FFFFFF; --foreground:#17181C;
-  --card:#FFFFFF; --card-foreground:#17181C;
-  --muted:#F7F7F9; --muted-foreground:#5A5D66;
-  --primary:#D85A30; --primary-foreground:#FFFFFF;
-  --border:#EDEDF0; --input:#EDEDF0; --ring:#E8734A;
-  --radius:0.875rem;
+  --background: #ffffff;
+  --foreground: #17181c;
+  --card: #ffffff;
+  --card-foreground: #17181c;
+  --muted: #f7f7f9;
+  --muted-foreground: #5a5d66;
+  --primary: #d85a30;
+  --primary-foreground: #ffffff;
+  --border: #ededf0;
+  --input: #ededf0;
+  --ring: #e8734a;
+  --radius: 0.875rem;
 }
 
 @theme inline {
-  --color-coral-900: var(--coral-900); --color-coral-800: var(--coral-800);
-  --color-coral-700: var(--coral-700); --color-coral-600: var(--coral-600);
-  --color-coral-500: var(--coral-500); --color-coral-400: var(--coral-400);
-  --color-coral-200: var(--coral-200); --color-coral-100: var(--coral-100);
+  --color-coral-900: var(--coral-900);
+  --color-coral-800: var(--coral-800);
+  --color-coral-700: var(--coral-700);
+  --color-coral-600: var(--coral-600);
+  --color-coral-500: var(--coral-500);
+  --color-coral-400: var(--coral-400);
+  --color-coral-200: var(--coral-200);
+  --color-coral-100: var(--coral-100);
   --color-coral-050: var(--coral-050);
-  --color-ink: var(--ink); --color-ink-2: var(--ink-2); --color-ink-3: var(--ink-3);
-  --color-line: var(--line); --color-surf: var(--surf);
-  --color-up: var(--up); --color-down: var(--down);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-surf: var(--surf);
+  --color-up: var(--up);
+  --color-down: var(--down);
   --font-sans: Heebo, system-ui, sans-serif;
 }
 
 @layer base {
-  html { direction: rtl; }
+  html {
+    direction: rtl;
+  }
   body {
     font-family: Heebo, system-ui, sans-serif;
     font-weight: 400;
@@ -185,22 +215,52 @@
     background: #fff;
     -webkit-font-smoothing: antialiased;
   }
-  h1,h2,h3,h4 { font-weight: 600; letter-spacing: -0.01em; }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
 }
 
-@utility tnum { font-variant-numeric: tabular-nums; }
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
 
 @utility head-grad {
-  background: linear-gradient(180deg,
-    #FF9A78 0%, #FFA98A 14%, #FFBC9F 30%, #FDD0B8 46%,
-    #FCE2D2 62%, #FDEEE6 78%, #FEF8F4 90%, #FFFFFF 100%);
+  background: linear-gradient(
+    180deg,
+    #ff9a78 0%,
+    #ffa98a 14%,
+    #ffbc9f 30%,
+    #fdd0b8 46%,
+    #fce2d2 62%,
+    #fdeee6 78%,
+    #fef8f4 90%,
+    #ffffff 100%
+  );
 }
 
 @utility coral-grad {
   background: linear-gradient(180deg, var(--coral-500) 0%, var(--coral-600) 100%);
 }
 
-@utility hairline { border-top: 1px solid var(--line); }
+@utility hairline {
+  border-top: 1px solid var(--line);
+}
 
-.skel { background: linear-gradient(90deg,#F1F1F4 25%,#E7E7EC 50%,#F1F1F4 75%); background-size:200% 100%; animation: skel 1.4s ease-in-out infinite; border-radius: 8px; }
-@keyframes skel { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skel {
+  background: linear-gradient(90deg, #f1f1f4 25%, #e7e7ec 50%, #f1f1f4 75%);
+  background-size: 200% 100%;
+  animation: skel 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes skel {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

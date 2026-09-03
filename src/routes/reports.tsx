@@ -13,7 +13,10 @@ export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
       { title: "דוחות · ברכת הדרך" },
-      { name: "description", content: "הפקת דוחות מכירות, מלאי, גבייה ולקוחות וייצוא לאקסל בעברית." },
+      {
+        name: "description",
+        content: "הפקת דוחות מכירות, מלאי, גבייה ולקוחות וייצוא לאקסל בעברית.",
+      },
       { property: "og:title", content: "דוחות · ברכת הדרך" },
       { property: "og:description", content: "דוחות וייצוא לאקסל בפנצ'ריית ברכת הדרך." },
       { property: "og:type", content: "website" },
@@ -50,7 +53,7 @@ function Reports() {
           rows.map((r) => ({
             תאריך: shortDate(get(r, ["doc_date", "date", "created_at"])),
             לקוח: customerName(r),
-            רכב: str(get(r, ["vehicle_no", "vehicle_number", "regnum"])),
+            רכב: str(get(r, ["car_num", "vehicle_no", "vehicle_number", "regnum"])),
             שירות: str(get(r, ["service", "pdes", "description"])),
             סכום: amountOf(r, vat),
           })),

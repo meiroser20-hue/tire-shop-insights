@@ -2,8 +2,25 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { IconArrowRight, IconBrandWhatsapp, IconFlag, IconPhone } from "@tabler/icons-react";
 import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
-import { Avatar, EmptyState, ErrorState, Section, SkeletonBlock, TimeFilter, Pill } from "@/components/kit";
-import { amountOf, customerName, get, initials, num, str, type Row, type TimeKey } from "@/lib/data";
+import {
+  Avatar,
+  EmptyState,
+  ErrorState,
+  Section,
+  SkeletonBlock,
+  TimeFilter,
+  Pill,
+} from "@/components/kit";
+import {
+  amountOf,
+  customerName,
+  get,
+  initials,
+  num,
+  str,
+  type Row,
+  type TimeKey,
+} from "@/lib/data";
 import { useView } from "@/lib/hooks";
 import { usePrefs } from "@/lib/prefs";
 import { ils, int, shortDate } from "@/lib/format";
@@ -50,18 +67,38 @@ function CustomerCard() {
   const myVehicles = (vehicles.data ?? []).filter(matches);
   const myObligo = (obligo.data ?? []).filter(matches);
 
-  if (customers.isError) return <Page><div className="py-6"><ErrorState onRetry={() => void customers.refetch()} /></div></Page>;
-  if (customers.isLoading) return <Page><div className="py-6"><SkeletonBlock rows={5} /></div></Page>;
+  if (customers.isError)
+    return (
+      <Page>
+        <div className="py-6">
+          <ErrorState onRetry={() => void customers.refetch()} />
+        </div>
+      </Page>
+    );
+  if (customers.isLoading)
+    return (
+      <Page>
+        <div className="py-6">
+          <SkeletonBlock rows={5} />
+        </div>
+      </Page>
+    );
 
   const name = c ? customerName(c) : id;
   const phone = c ? phoneOf(c) : "";
-  const debt = c ? debtOf(c) || myObligo.reduce((s, r) => s + num(get(r, ["open_balance", "balance", "amount"])), 0) : 0;
+  const debt = c
+    ? debtOf(c) ||
+      myObligo.reduce((s, r) => s + num(get(r, ["open_balance", "balance", "amount"])), 0)
+    : 0;
 
   return (
     <>
       <ScreenHeader title={name}>
         <div className="flex items-center justify-between gap-3">
-          <Link to="/customers" className="inline-flex items-center gap-1 text-[12.5px] text-coral-800">
+          <Link
+            to="/customers"
+            className="inline-flex items-center gap-1 text-[12.5px] text-coral-800"
+          >
             <IconArrowRight size={15} stroke={1.5} />
             כל הלקוחות
           </Link>
@@ -90,7 +127,11 @@ function CustomerCard() {
             <div className="min-w-0 flex-1">
               <div className="truncate text-[15.5px] text-ink">{name}</div>
               <div className="tnum truncate text-[11px] text-ink-3">
-                {[str(get(c ?? {}, ["tax_id", "hp", "vat_number"])), phone, str(get(c ?? {}, ["city", "address"]))]
+                {[
+                  str(get(c ?? {}, ["tax_id", "hp", "vat_number"])),
+                  phone,
+                  str(get(c ?? {}, ["city", "address"])),
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </div>
@@ -102,17 +143,23 @@ function CustomerCard() {
 
           <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-[14px] border border-line text-center">
             <Stat label="ביקורים" value={int(c ? visitsOf(c) : mySales.length)} />
-            <Stat label="מצטבר" value={ils(c ? lifetime(c) : mySales.reduce((s, r) => s + amountOf(r, vat), 0))} border />
+            <Stat
+              label="מצטבר"
+              value={ils(c ? lifetime(c) : mySales.reduce((s, r) => s + amountOf(r, vat), 0))}
+              border
+            />
             <Stat label="חוב" value={ils(debt)} />
           </div>
 
           <div className="mt-4 flex gap-1.5 overflow-x-auto">
-            {([
-              ["sales", "עסקאות"],
-              ["vehicles", "רכבים"],
-              ["debt", "חוב"],
-              ["details", "פרטים"],
-            ] as Array<[Tab, string]>).map(([v, l]) => (
+            {(
+              [
+                ["sales", "עסקאות"],
+                ["vehicles", "רכבים"],
+                ["debt", "חוב"],
+                ["details", "פרטים"],
+              ] as Array<[Tab, string]>
+            ).map(([v, l]) => (
               <Pill key={v} active={tab === v} onClick={() => setTab(v)}>
                 {l}
               </Pill>
@@ -160,7 +207,7 @@ function CustomerCard() {
                 {myVehicles.map((v, i) => (
                   <div key={i} className="bg-white px-3 py-2.5">
                     <div className="tnum text-[14px] text-ink" dir="ltr">
-                      {str(get(v, ["vehicle_no", "vehicle_number", "regnum"]))}
+                      {str(get(v, ["car_num", "vehicle_no", "vehicle_number", "regnum"]))}
                     </div>
                     <div className="tnum text-[11px] text-ink-3">
                       {int(num(get(v, ["treatments", "visits", "services"])))} טיפולים · אחרון{" "}
@@ -183,12 +230,17 @@ function CustomerCard() {
             ) : (
               <div className="space-y-2">
                 {myObligo.map((o, i) => (
-                  <div key={i} className="flex justify-between rounded-[14px] border border-line bg-white px-3 py-2.5 text-[12.5px]">
+                  <div
+                    key={i}
+                    className="flex justify-between rounded-[14px] border border-line bg-white px-3 py-2.5 text-[12.5px]"
+                  >
                     <span className="text-ink-2">
                       {str(get(o, ["doc_type", "type", "description"])) || "יתרה פתוחה"} ·{" "}
                       {shortDate(get(o, ["due_date", "date", "doc_date"]))}
                     </span>
-                    <span className="tnum text-ink">{ils(num(get(o, ["open_balance", "balance", "amount"])))}</span>
+                    <span className="tnum text-ink">
+                      {ils(num(get(o, ["open_balance", "balance", "amount"])))}
+                    </span>
                   </div>
                 ))}
               </div>

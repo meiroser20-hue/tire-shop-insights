@@ -172,14 +172,18 @@ export async function fetchRows(view: string, opts: FetchOpts = {}): Promise<Row
 export type Vat = "net" | "gross";
 
 export function amountOf(row: Row, vat: Vat): number {
-  const k = vat === "gross" ? ["amount_gross", "total_gross", "gross"] : ["amount_net", "total_net", "net"];
+  const k =
+    vat === "gross" ? ["amount_gross", "total_gross", "gross"] : ["amount_net", "total_net", "net"];
   const v = get(row, k);
   if (v !== undefined) return num(v);
   return num(get(row, ["amount", "total", "sum", "value"]));
 }
 
 export function customerName(row: Row): string {
-  return str(get(row, ["customer_name", "cust_name", "custdes", "name"])) || "לקוח לא מזוהה";
+  return (
+    str(get(row, ["display_name", "cust_des", "customer_name", "cust_name", "custdes", "name"])) ||
+    "לקוח לא מזוהה"
+  );
 }
 
 export function vehicleClassOf(row: Row): string {
@@ -217,9 +221,7 @@ export function groupSum<T>(
     cur.count += 1;
     m.set(k, cur);
   }
-  return [...m.entries()]
-    .map(([key, v]) => ({ key, ...v }))
-    .sort((a, b) => b.value - a.value);
+  return [...m.entries()].map(([key, v]) => ({ key, ...v })).sort((a, b) => b.value - a.value);
 }
 
 export function uniqueCount<T>(rows: T[], keyFn: (r: T) => string): number {

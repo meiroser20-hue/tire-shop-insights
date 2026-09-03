@@ -35,15 +35,21 @@ import {
 import { useView, usePrevView } from "@/lib/hooks";
 import { usePrefs } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth";
-import { agoText, greeting, ils, int, timeOf, change } from "@/lib/format";
+import { agoText, greeting, ils, int, timeOf, change, cars, visits } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "בית · ברכת הדרך" },
-      { name: "description", content: "מבט יומי על ההכנסות, הרכבים, המלאי והכספים של פנצ'ריית ברכת הדרך." },
+      {
+        name: "description",
+        content: "מבט יומי על ההכנסות, הרכבים, המלאי והכספים של פנצ'ריית ברכת הדרך.",
+      },
       { property: "og:title", content: "בית · ברכת הדרך" },
-      { property: "og:description", content: "מבט יומי על ההכנסות, הרכבים והמלאי בפנצ'ריית ברכת הדרך." },
+      {
+        property: "og:description",
+        content: "מבט יומי על ההכנסות, הרכבים והמלאי בפנצ'ריית ברכת הדרך.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -55,7 +61,7 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-const vehicleKeys = ["vehicle_no", "vehicle_number", "car_number", "license", "regnum"];
+const vehicleKeys = ["car_num", "vehicle_no", "vehicle_number", "car_number", "regnum"];
 const catKeys = ["category", "service_category", "cat"];
 const qtyKeys = ["quantity", "qty", "units", "tquant"];
 const sizeKeys = ["size", "tire_size", "measure"];
@@ -67,7 +73,10 @@ function Home() {
 
   const sales = useView("v_sales", time, { limit: 5000 });
   const prev = usePrevView("v_sales", time);
-  const sync = useView("sync_log", null, { limit: 1 });
+  const sync = useView("sync_log", null, {
+    limit: 1,
+    order: { key: ["finished_at", "started_at"] },
+  });
 
   const rows = sales.data ?? [];
   const total = useMemo(() => rows.reduce((s, r) => s + amountOf(r, vat), 0), [rows, vat]);
@@ -102,7 +111,9 @@ function Home() {
             <Skeleton className="mx-auto h-12 w-48" />
           ) : (
             <>
-              <div className="tnum text-[50px] font-500 leading-none text-coral-900">{ils(total)}</div>
+              <div className="tnum text-[50px] font-500 leading-none text-coral-900">
+                {ils(total)}
+              </div>
               <div className="mt-2">
                 <Delta value={change(total, prevTotal)} />
               </div>
@@ -130,9 +141,9 @@ function Home() {
         ) : (
           <>
             <Metrics rows={rows} prevRows={prev.data ?? []} />
-            <HourlySection time={time} />
+            <HourlySection rows={rows} />
             <ClassSplit rows={rows} />
-            <ServiceMix time={time} />
+            <ServiceMix rows={rows} />
             <TopCustomers />
             <TopSizes rows={rows} />
             <RecentVehicles rows={rows} />
@@ -162,7 +173,11 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
   const vehicles = veh(rows) || rows.length;
   const catQty = (needle: string, rs = rows) =>
     rs
-      .filter((r) => str(get(r, catKeys)).includes(needle) || str(get(r, ["service", "description", "pdes"])).includes(needle))
+      .filter((r) =>
+        [str(get(r, catKeys)), str(r["family_desc"]), str(r["family_name"]), str(r["part_des"])]
+          .join(" ")
+          .includes(needle),
+      )
       .reduce((s, r) => s + (num(get(r, qtyKeys)) || 1), 0);
 
   return (
@@ -171,19 +186,19 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
         <MetricCard
           label="משא כבד"
           value={ils(sum(heavy))}
-          sub={`${int(veh(heavy))} רכבים`}
+          sub={cars(veh(heavy))}
           delta={change(sum(heavy), sum(prevRows.filter(isHeavy)))}
         />
         <MetricCard
           label="רכב פרטי"
           value={ils(sum(priv))}
-          sub={`${int(veh(priv))} רכבים`}
+          sub={cars(veh(priv))}
           delta={change(sum(priv), sum(prevRows.filter(isPrivate)))}
         />
         <MetricCard
           label="ממוצע לרכב"
           value={ils(vehicles ? sum(rows) / vehicles : 0)}
-          sub={`${int(vehicles)} רכבים`}
+          sub={cars(vehicles)}
         />
         <MetricCard label="צמיגים נמכרו" value={int(catQty("צמיג"))} sub="יחידות" />
         <MetricCard label="תקרים תוקנו" value={int(catQty("תקר"))} sub="יחידות" />
@@ -195,20 +210,20 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
 
 /* -------------------------------- hourly -------------------------------- */
 
-function HourlySection({ time }: { time: TimeKey }) {
+function HourlySection({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
-  const q = useView("v_sales_by_hour", time, { limit: 500 });
   const data = useMemo(() => {
-    const rows = q.data ?? [];
     const m = new Map<number, number>();
     for (const r of rows) {
-      const h = num(get(r, ["hour", "hour_of_day", "hr"]));
+      const raw = get(r, ["signed_at", "doc_time", "created_at"]);
+      const d = raw ? new Date(str(raw)) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      const h = d.getHours();
       m.set(h, (m.get(h) ?? 0) + amountOf(r, vat));
     }
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
-  }, [q.data, vat]);
+  }, [rows, vat]);
 
-  if (q.isLoading) return <Section title="תנועה לפי שעה"><Skeleton className="h-28 w-full rounded-[14px]" /></Section>;
   if (!data.length) return null;
 
   const max = Math.max(...data.map((d) => d[1]));
@@ -226,7 +241,8 @@ function HourlySection({ time }: { time: TimeKey }) {
                 className="w-full rounded-t-[6px]"
                 style={{
                   height: `${Math.max(4, ratio * 88)}px`,
-                  background: h === peak[0] ? "var(--coral-600)" : `rgba(232,115,74,${0.25 + ratio * 0.4})`,
+                  background:
+                    h === peak[0] ? "var(--coral-600)" : `rgba(232,115,74,${0.25 + ratio * 0.4})`,
                 }}
               />
               <span className="tnum text-[10px] text-ink-3">{h}</span>
@@ -246,9 +262,19 @@ function HourlySection({ time }: { time: TimeKey }) {
 function ClassSplit({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
   const groups = useMemo(
-    () => groupSum(rows, (r) => str(get(r, ["vehicle_class", "vehicletype"])) || "אחר", (r) => amountOf(r, vat)),
+    () =>
+      groupSum(
+        rows,
+        (r) => str(r["vehicle_class"]) || "אחר",
+        (r) => amountOf(r, vat),
+      ),
     [rows, vat],
   );
+  const carsIn = (cls: string) =>
+    uniqueCount(
+      rows.filter((r) => (str(r["vehicle_class"]) || "אחר") === cls),
+      (r) => str(get(r, vehicleKeys)),
+    );
   const total = groups.reduce((s, g) => s + g.value, 0);
   if (!groups.length || !total) return null;
 
@@ -275,7 +301,7 @@ function ClassSplit({ rows }: { rows: Row[] }) {
         >
           <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-white">
             <span className="tnum text-[14px] font-500 text-ink">{ils(total)}</span>
-            <span className="tnum text-[10px] text-ink-3">{int(vehicles)} רכבים</span>
+            <span className="tnum text-[10px] text-ink-3">{cars(vehicles)}</span>
           </div>
         </div>
         <div className="min-w-0 flex-1 space-y-2">
@@ -284,7 +310,7 @@ function ClassSplit({ rows }: { rows: Row[] }) {
               <span className="size-2.5 shrink-0 rounded-full" style={{ background: colors[i] }} />
               <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
               <span className="tnum text-ink-3">{Math.round((g.value / total) * 100)}%</span>
-              <span className="tnum text-ink-2">{g.count} רכבים</span>
+              <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
             </div>
           ))}
         </div>
@@ -295,19 +321,17 @@ function ClassSplit({ rows }: { rows: Row[] }) {
 
 /* ----------------------------- service mix ------------------------------ */
 
-function ServiceMix({ time }: { time: TimeKey }) {
+function ServiceMix({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
-  const q = useView("v_service_mix", time, { limit: 500 });
   const groups = useMemo(
     () =>
       groupSum(
-        q.data ?? [],
-        (r) => str(get(r, ["service", "service_name", "category", "pdes"])) || "אחר",
+        rows,
+        (r) => [str(r["category"]), str(r["family_desc"])].filter(Boolean).join(" · ") || "אחר",
         (r) => amountOf(r, vat),
       ).slice(0, 6),
-    [q.data, vat],
+    [rows, vat],
   );
-  if (q.isLoading) return <Section title="מה נמכר"><SkeletonBlock rows={3} /></Section>;
   if (!groups.length) return null;
   const max = groups[0]?.value ?? 0;
 
@@ -335,12 +359,15 @@ function TopCustomers() {
   const q = useView("v_customers_unified", null, { limit: 500 });
   const top = useMemo(() => {
     const rows = q.data ?? [];
-    return [...rows]
-      .sort((a, b) => amountOf(b, vat) - amountOf(a, vat))
-      .slice(0, 3);
+    return [...rows].sort((a, b) => amountOf(b, vat) - amountOf(a, vat)).slice(0, 3);
   }, [q.data, vat]);
 
-  if (q.isLoading) return <Section title="לקוחות מובילים"><SkeletonBlock rows={3} /></Section>;
+  if (q.isLoading)
+    return (
+      <Section title="לקוחות מובילים">
+        <SkeletonBlock rows={3} />
+      </Section>
+    );
   if (!top.length) return null;
 
   return (
@@ -358,8 +385,8 @@ function TopCustomers() {
                   {i === 0 && <IconMedal size={15} stroke={1.5} className="text-[#C9A227]" />}
                 </div>
                 <div className="tnum text-[11px] text-ink-3">
-                  {int(num(get(c, ["visits", "visit_count"])))} ביקורים ·{" "}
-                  {int(num(get(c, ["vehicles", "vehicle_count"])))} רכבים
+                  {visits(num(get(c, ["visits", "visit_count"])))} ·{" "}
+                  {cars(num(get(c, ["vehicles", "vehicle_count"])))}
                 </div>
               </div>
               <span className="tnum text-[14px] text-ink">{ils(life || amountOf(c, vat))}</span>
@@ -376,7 +403,12 @@ function TopCustomers() {
 function TopSizes({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
   const sizes = useMemo(
-    () => groupSum(rows.filter((r) => str(get(r, sizeKeys))), (r) => str(get(r, sizeKeys)), (r) => amountOf(r, vat)).slice(0, 8),
+    () =>
+      groupSum(
+        rows.filter((r) => str(get(r, sizeKeys))),
+        (r) => str(get(r, sizeKeys)),
+        (r) => amountOf(r, vat),
+      ).slice(0, 8),
     [rows, vat],
   );
   if (!sizes.length) return null;
@@ -430,7 +462,11 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
                   )}
                 </div>
                 <div className="tnum truncate text-[11px] text-ink-3">
-                  {[timeOf(get(r, ["created_at", "doc_time", "doc_date"])), str(get(r, vehicleKeys)), str(get(r, ["service", "description", "pdes", "category"]))]
+                  {[
+                    timeOf(get(r, ["signed_at", "doc_time", "doc_date"])),
+                    str(get(r, vehicleKeys)),
+                    str(get(r, ["family_desc", "category", "part_des"])),
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
@@ -451,10 +487,18 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
 
 function FinanceStrip() {
   const q = useView("customer_obligo", null, { limit: 2000 });
-  if (q.isLoading) return <Section title="כספים"><SkeletonBlock rows={2} /></Section>;
+  if (q.isLoading)
+    return (
+      <Section title="כספים">
+        <SkeletonBlock rows={2} />
+      </Section>
+    );
   if (q.isError || !(q.data ?? []).length) return null;
   const rows = q.data ?? [];
-  const openSum = rows.reduce((s, r) => s + num(get(r, ["open_balance", "balance", "debt", "amount"])), 0);
+  const openSum = rows.reduce(
+    (s, r) => s + num(get(r, ["open_balance", "balance", "debt", "amount"])),
+    0,
+  );
   const overdue = rows.reduce(
     (s, r) => s + num(get(r, ["overdue", "past_due", "aging_90", "days_90"])),
     0,
@@ -466,7 +510,12 @@ function FinanceStrip() {
     <Section title="כספים">
       <div className="grid grid-cols-2 gap-2.5">
         <ColorCard label="חייבים לי" value={ils(openSum)} bg="var(--teal-bg)" fg="var(--teal-fg)" />
-        <ColorCard label="אני חייב" value={ils(supplier)} bg="var(--violet-bg)" fg="var(--violet-fg)" />
+        <ColorCard
+          label="אני חייב"
+          value={ils(supplier)}
+          bg="var(--violet-bg)"
+          fg="var(--violet-fg)"
+        />
         <ColorCard label="בפיגור" value={ils(overdue)} bg="var(--amber-bg)" fg="var(--amber-fg)" />
         <ColorCard
           label="צפוי להיכנס השבוע"
@@ -486,7 +535,12 @@ function StockStrip() {
   const dead = useView("v_dead_stock", null, { limit: 2000 });
   const forecast = useView("v_stock_forecast", null, { limit: 2000 });
 
-  if (stock.isLoading) return <Section title="מלאי"><SkeletonBlock rows={2} /></Section>;
+  if (stock.isLoading)
+    return (
+      <Section title="מלאי">
+        <SkeletonBlock rows={2} />
+      </Section>
+    );
   if (stock.isError) return null;
 
   const stockRows = stock.data ?? [];
@@ -495,7 +549,10 @@ function StockStrip() {
     const d = num(get(r, ["days_to_zero", "days_left"]));
     return d > 0 && d <= 7;
   });
-  const units = stockRows.reduce((s, r) => s + num(get(r, ["balance", "qty", "quantity", "on_hand"])), 0);
+  const units = stockRows.reduce(
+    (s, r) => s + num(get(r, ["balance", "qty", "quantity", "on_hand"])),
+    0,
+  );
   const urgent = [...soon].sort(
     (a, b) => num(get(a, ["days_to_zero"])) - num(get(b, ["days_to_zero"])),
   )[0];
@@ -528,7 +585,10 @@ function Insights() {
     <Section title="תובנות">
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <p key={i} className="rounded-[14px] bg-coral-050 px-3.5 py-3 text-[12.5px] text-coral-900">
+          <p
+            key={i}
+            className="rounded-[14px] bg-coral-050 px-3.5 py-3 text-[12.5px] text-coral-900"
+          >
             {str(get(r, ["insight", "text", "message", "title"]))}
           </p>
         ))}

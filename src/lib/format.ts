@@ -53,3 +53,11 @@ export function greeting(name?: string | null) {
 }
 
 export const weekdayName = (i: number) => HE_DAYS[i] ?? "";
+
+/** Hebrew singular/plural helper. */
+export function plural(n: number, one: string, many: string): string {
+  return n === 1 ? `1 ${one}` : `${int(n)} ${many}`;
+}
+
+export const cars = (n: number) => plural(n, "רכב", "רכבים");
+export const visits = (n: number) => plural(n, "ביקור", "ביקורים");
