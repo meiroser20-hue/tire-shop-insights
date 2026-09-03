@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   IconRefresh,
@@ -101,25 +101,71 @@ const CLASS_COLORS: Record<string, string> = {
   בלון: "var(--v-balloon)",
 };
 
+/* שרשראות הרחבה: אם אין נתונים בטווח, הסקשן מרחיב מעצמו לטווח הבא */
+const FULL_CHAIN: TimeKey[] = ["today", "yesterday", "week", "month", "all"];
+const MONTH_CHAIN: TimeKey[] = ["month", "all"];
+const RECENT_CHAIN: TimeKey[] = ["today", "yesterday", "week"];
+
+/**
+ * טווח זמן שמרחיב את עצמו כשאין נתונים.
+ * ברגע שהמשתמש בוחר טווח ידנית — ההרחבה נעצרת ולא דורסת את הבחירה שלו.
+ */
+function useAutoRange(initial: TimeKey, chain: TimeKey[]) {
+  const [range, setRangeState] = useState<TimeKey>(initial);
+  const pinned = useRef(false);
+  const query = useView("v_sales", range, { limit: 5000 });
+
+  useEffect(() => {
+    if (pinned.current || query.isLoading || query.isError) return;
+    if ((query.data ?? []).length > 0) return;
+    const i = chain.indexOf(range);
+    const next = i >= 0 ? chain[i + 1] : undefined;
+    if (next) setRangeState(next);
+  }, [query.data, query.isLoading, query.isError, range, chain]);
+
+  const setRange = (r: TimeKey) => {
+    pinned.current = true;
+    setRangeState(r);
+  };
+
+  return { range, setRange, query };
+}
+
 function Home() {
   const { profile } = useAuth();
   const { vat, setVat } = usePrefs();
-  const [salesRange, setSalesRange] = useState<TimeKey>("today");
-  const [hoursRange, setHoursRange] = useState<TimeKey>("today");
-  const [mixRange, setMixRange] = useState<TimeKey>("today");
-  const [servRange, setServRange] = useState<TimeKey>("today");
-  const [topCustRange, setTopCustRange] = useState<TimeKey>("month");
-  const [sizesRange, setSizesRange] = useState<TimeKey>("month");
-  const [recentRange, setRecentRange] = useState<TimeKey>("today");
 
-  const sales = useView("v_sales", salesRange, { limit: 5000 });
+  const salesR = useAutoRange("today", FULL_CHAIN);
+  const hoursR = useAutoRange("today", FULL_CHAIN);
+  const mixR = useAutoRange("today", FULL_CHAIN);
+  const servR = useAutoRange("today", FULL_CHAIN);
+  const custR = useAutoRange("month", MONTH_CHAIN);
+  const sizesR = useAutoRange("month", MONTH_CHAIN);
+  const recentR = useAutoRange("today", RECENT_CHAIN);
+
+  const salesRange = salesR.range;
+  const setSalesRange = salesR.setRange;
+  const hoursRange = hoursR.range;
+  const setHoursRange = hoursR.setRange;
+  const mixRange = mixR.range;
+  const setMixRange = mixR.setRange;
+  const servRange = servR.range;
+  const setServRange = servR.setRange;
+  const topCustRange = custR.range;
+  const setTopCustRange = custR.setRange;
+  const sizesRange = sizesR.range;
+  const setSizesRange = sizesR.setRange;
+  const recentRange = recentR.range;
+  const setRecentRange = recentR.setRange;
+
+  const sales = salesR.query;
   const prev = usePrevView("v_sales", salesRange);
-  const hours = useView("v_sales", hoursRange, { limit: 5000 });
-  const mix = useView("v_sales", mixRange, { limit: 5000 });
-  const serv = useView("v_sales", servRange, { limit: 5000 });
-  const topCustomers = useView("v_sales", topCustRange, { limit: 5000 });
-  const sizes = useView("v_sales", sizesRange, { limit: 5000 });
-  const recent = useView("v_sales", recentRange, { limit: 5000 });
+  const hours = hoursR.query;
+  const mix = mixR.query;
+  const serv = servR.query;
+  const topCustomers = custR.query;
+  const sizes = sizesR.query;
+  const recent = recentR.query;
   const daily = useView("v_daily_summary", null, {
     limit: 14,
     order: { key: ["doc_date"] },
@@ -452,7 +498,6 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       ).slice(0, 6),
     [rows, vat],
   );
-  if (!groups.length) return null;
   const max = groups[0]?.value ?? 0;
   const tones = [
     "var(--s-tire)",
@@ -468,17 +513,26 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       icon={<IconTools size={15} stroke={1.6} />}
       action={<RangePicker range={range} onRange={onRange} />}
     >
-      <div className="space-y-3.5">
-        {groups.map((g, i) => (
-          <div key={g.key}>
-            <div className="mb-1 flex items-center justify-between text-[12.5px]">
-              <span className="text-ink">{g.key}</span>
-              <AnimatedMoney value={g.value} className="text-ink-2" />
+      {groups.length === 0 ? (
+        <EmptyState text="אין עסקאות בטווח שנבחר" />
+      ) : (
+        <div className="space-y-3.5">
+          {groups.map((g, i) => (
+            <div key={g.key}>
+              <div className="mb-1 flex items-center justify-between text-[12.5px]">
+                <span className="text-ink">{g.key}</span>
+                <AnimatedMoney value={g.value} className="text-ink-2" />
+              </div>
+              <Bar
+                value={g.value}
+                max={max}
+                thin
+                color={tones[i % tones.length] ?? "var(--red-500)"}
+              />
             </div>
-            <Bar value={g.value} max={max} thin color={tones[i % tones.length] ?? "var(--red-500)"} />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </Section>
   );
 }
@@ -636,11 +690,7 @@ function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) 
       title="רכבים אחרונים"
       icon={<IconCar size={15} stroke={1.6} />}
       action={
-        <RangePicker
-          range={range}
-          onRange={onRange}
-          options={["today", "yesterday", "week"]}
-        />
+        <RangePicker range={range} onRange={onRange} options={["today", "yesterday", "week"]} />
       }
     >
       <Timeline
