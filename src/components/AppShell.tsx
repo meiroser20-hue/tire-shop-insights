@@ -77,20 +77,20 @@ export function ScreenHeader({
       <div className="mx-auto max-w-[1360px]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[11px] text-coral-800/70">{longDate()}</div>
-            <h1 className="mt-0.5 text-[23px] font-600 text-coral-900">{title}</h1>
-            {subtitle && <div className="mt-1 text-[11px] text-coral-800/70">{subtitle}</div>}
+            <div className="text-[11px] text-ink-3">{longDate()}</div>
+            <h1 className="mt-0.5 text-[23px] font-600 text-ink">{title}</h1>
+            {subtitle && <div className="mt-1 text-[11px] text-ink-3">{subtitle}</div>}
           </div>
           <div className="relative flex items-center gap-1">
             <button
-              className="rounded-full p-2 text-coral-900/70 hover:bg-white/50"
+              className="rounded-full p-2 text-ink-2 hover:bg-white/60"
               aria-label="התראות"
             >
               <IconBell size={19} stroke={1.5} />
             </button>
             <button
               onClick={() => setMenu((m) => !m)}
-              className="rounded-full p-2 text-coral-900/70 hover:bg-white/50"
+              className="rounded-full p-2 text-ink-2 hover:bg-white/60"
               aria-label="תפריט"
             >
               <IconDots size={19} stroke={1.5} />

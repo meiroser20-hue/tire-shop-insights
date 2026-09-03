@@ -50,8 +50,8 @@ export function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-[12.5px] transition-[transform,background-color,color] duration-[180ms] active:scale-[.96] ${
-        active ? "text-white" : "border border-line bg-white/70 text-ink-2 hover:bg-red-050"
+      className={`shrink-0 rounded-full px-3 py-1 text-[10.5px] transition-[transform,background-color,color] duration-[180ms] active:scale-[.96] ${
+        active ? "text-white" : "bg-[#F4F4F6] text-ink-2 hover:bg-red-050"
       }`}
       style={active ? { background: RED_GRAD } : undefined}
     >
@@ -97,7 +97,7 @@ export function Segmented<T extends string>({
           type="button"
           onClick={() => onChange(o.value)}
           className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition-[transform,background-color] duration-[180ms] active:scale-[.96] ${
-            value === o.value ? "bg-red-100 font-500 text-red-700" : "text-ink-2"
+            value === o.value ? "red-grad font-500 text-white" : "text-ink-2"
           }`}
         >
           {o.label}
@@ -451,6 +451,7 @@ export function Donut({
   return (
     <div
       key={stops}
+      title={slices.map((slice) => `${slice.key}: ${Math.round((slice.value / total) * 100)}%`).join(" · ")}
       className="donut-turn relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
       style={{ background: `conic-gradient(${stops})` }}
     >
