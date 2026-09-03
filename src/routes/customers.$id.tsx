@@ -57,12 +57,23 @@ function CustomerCard() {
   const vehicles = useView("v_vehicles", null, { limit: 2000 });
   const obligo = useView("customer_obligo", null, { limit: 2000 });
 
+  const key = useMemo(() => {
+    try {
+      return decodeURIComponent(id);
+    } catch {
+      return id;
+    }
+  }, [id]);
+
   const c = useMemo(
-    () => (customers.data ?? []).find((r) => custId(r) === id || customerName(r) === id),
-    [customers.data, id],
+    () => (customers.data ?? []).find((r) => custId(r) === key || customerName(r) === key),
+    [customers.data, key],
   );
 
-  const matches = (r: Row) => custId(r) === id || customerName(r) === (c ? customerName(c) : id);
+  const matches = (r: Row) =>
+    custId(r) === key ||
+    customerName(r) === (c ? customerName(c) : key) ||
+    (!!c && !!phoneOf(c) && phoneOf(r) === phoneOf(c));
   const mySales = (sales.data ?? []).filter(matches);
   const myVehicles = (vehicles.data ?? []).filter(matches);
   const myObligo = (obligo.data ?? []).filter(matches);
