@@ -82,7 +82,10 @@ export function ScreenHeader({
             {subtitle && <div className="mt-1 text-[11px] text-coral-800/70">{subtitle}</div>}
           </div>
           <div className="relative flex items-center gap-1">
-            <button className="rounded-full p-2 text-coral-900/70 hover:bg-white/50" aria-label="התראות">
+            <button
+              className="rounded-full p-2 text-coral-900/70 hover:bg-white/50"
+              aria-label="התראות"
+            >
               <IconBell size={19} stroke={1.5} />
             </button>
             <button
@@ -186,7 +189,10 @@ function MobileNav() {
     <>
       {more && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/20 lg:hidden" onClick={() => setMore(false)} />
+          <div
+            className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+            onClick={() => setMore(false)}
+          />
           <div className="fixed inset-x-3 bottom-24 z-50 rounded-[16px] bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,.28)] lg:hidden">
             {rest.map(({ to, label, Icon }) => (
               <Link

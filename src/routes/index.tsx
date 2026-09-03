@@ -41,9 +41,15 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "בית · ברכת הדרך" },
-      { name: "description", content: "מבט יומי על ההכנסות, הרכבים, המלאי והכספים של פנצ'ריית ברכת הדרך." },
+      {
+        name: "description",
+        content: "מבט יומי על ההכנסות, הרכבים, המלאי והכספים של פנצ'ריית ברכת הדרך.",
+      },
       { property: "og:title", content: "בית · ברכת הדרך" },
-      { property: "og:description", content: "מבט יומי על ההכנסות, הרכבים והמלאי בפנצ'ריית ברכת הדרך." },
+      {
+        property: "og:description",
+        content: "מבט יומי על ההכנסות, הרכבים והמלאי בפנצ'ריית ברכת הדרך.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -67,7 +73,10 @@ function Home() {
 
   const sales = useView("v_sales", time, { limit: 5000 });
   const prev = usePrevView("v_sales", time);
-  const sync = useView("sync_log", null, { limit: 1, order: { key: ["finished_at", "started_at"] } });
+  const sync = useView("sync_log", null, {
+    limit: 1,
+    order: { key: ["finished_at", "started_at"] },
+  });
 
   const rows = sales.data ?? [];
   const total = useMemo(() => rows.reduce((s, r) => s + amountOf(r, vat), 0), [rows, vat]);
@@ -102,7 +111,9 @@ function Home() {
             <Skeleton className="mx-auto h-12 w-48" />
           ) : (
             <>
-              <div className="tnum text-[50px] font-500 leading-none text-coral-900">{ils(total)}</div>
+              <div className="tnum text-[50px] font-500 leading-none text-coral-900">
+                {ils(total)}
+              </div>
               <div className="mt-2">
                 <Delta value={change(total, prevTotal)} />
               </div>
@@ -230,7 +241,8 @@ function HourlySection({ rows }: { rows: Row[] }) {
                 className="w-full rounded-t-[6px]"
                 style={{
                   height: `${Math.max(4, ratio * 88)}px`,
-                  background: h === peak[0] ? "var(--coral-600)" : `rgba(232,115,74,${0.25 + ratio * 0.4})`,
+                  background:
+                    h === peak[0] ? "var(--coral-600)" : `rgba(232,115,74,${0.25 + ratio * 0.4})`,
                 }}
               />
               <span className="tnum text-[10px] text-ink-3">{h}</span>
@@ -250,11 +262,19 @@ function HourlySection({ rows }: { rows: Row[] }) {
 function ClassSplit({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
   const groups = useMemo(
-    () => groupSum(rows, (r) => str(r["vehicle_class"]) || "אחר", (r) => amountOf(r, vat)),
+    () =>
+      groupSum(
+        rows,
+        (r) => str(r["vehicle_class"]) || "אחר",
+        (r) => amountOf(r, vat),
+      ),
     [rows, vat],
   );
   const carsIn = (cls: string) =>
-    uniqueCount(rows.filter((r) => (str(r["vehicle_class"]) || "אחר") === cls), (r) => str(get(r, vehicleKeys)));
+    uniqueCount(
+      rows.filter((r) => (str(r["vehicle_class"]) || "אחר") === cls),
+      (r) => str(get(r, vehicleKeys)),
+    );
   const total = groups.reduce((s, g) => s + g.value, 0);
   if (!groups.length || !total) return null;
 
@@ -339,12 +359,15 @@ function TopCustomers() {
   const q = useView("v_customers_unified", null, { limit: 500 });
   const top = useMemo(() => {
     const rows = q.data ?? [];
-    return [...rows]
-      .sort((a, b) => amountOf(b, vat) - amountOf(a, vat))
-      .slice(0, 3);
+    return [...rows].sort((a, b) => amountOf(b, vat) - amountOf(a, vat)).slice(0, 3);
   }, [q.data, vat]);
 
-  if (q.isLoading) return <Section title="לקוחות מובילים"><SkeletonBlock rows={3} /></Section>;
+  if (q.isLoading)
+    return (
+      <Section title="לקוחות מובילים">
+        <SkeletonBlock rows={3} />
+      </Section>
+    );
   if (!top.length) return null;
 
   return (
@@ -380,7 +403,12 @@ function TopCustomers() {
 function TopSizes({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
   const sizes = useMemo(
-    () => groupSum(rows.filter((r) => str(get(r, sizeKeys))), (r) => str(get(r, sizeKeys)), (r) => amountOf(r, vat)).slice(0, 8),
+    () =>
+      groupSum(
+        rows.filter((r) => str(get(r, sizeKeys))),
+        (r) => str(get(r, sizeKeys)),
+        (r) => amountOf(r, vat),
+      ).slice(0, 8),
     [rows, vat],
   );
   if (!sizes.length) return null;
@@ -434,7 +462,11 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
                   )}
                 </div>
                 <div className="tnum truncate text-[11px] text-ink-3">
-                  {[timeOf(get(r, ["signed_at", "doc_time", "doc_date"])), str(get(r, vehicleKeys)), str(get(r, ["family_desc", "category", "part_des"]))]
+                  {[
+                    timeOf(get(r, ["signed_at", "doc_time", "doc_date"])),
+                    str(get(r, vehicleKeys)),
+                    str(get(r, ["family_desc", "category", "part_des"])),
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
@@ -455,10 +487,18 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
 
 function FinanceStrip() {
   const q = useView("customer_obligo", null, { limit: 2000 });
-  if (q.isLoading) return <Section title="כספים"><SkeletonBlock rows={2} /></Section>;
+  if (q.isLoading)
+    return (
+      <Section title="כספים">
+        <SkeletonBlock rows={2} />
+      </Section>
+    );
   if (q.isError || !(q.data ?? []).length) return null;
   const rows = q.data ?? [];
-  const openSum = rows.reduce((s, r) => s + num(get(r, ["open_balance", "balance", "debt", "amount"])), 0);
+  const openSum = rows.reduce(
+    (s, r) => s + num(get(r, ["open_balance", "balance", "debt", "amount"])),
+    0,
+  );
   const overdue = rows.reduce(
     (s, r) => s + num(get(r, ["overdue", "past_due", "aging_90", "days_90"])),
     0,
@@ -470,7 +510,12 @@ function FinanceStrip() {
     <Section title="כספים">
       <div className="grid grid-cols-2 gap-2.5">
         <ColorCard label="חייבים לי" value={ils(openSum)} bg="var(--teal-bg)" fg="var(--teal-fg)" />
-        <ColorCard label="אני חייב" value={ils(supplier)} bg="var(--violet-bg)" fg="var(--violet-fg)" />
+        <ColorCard
+          label="אני חייב"
+          value={ils(supplier)}
+          bg="var(--violet-bg)"
+          fg="var(--violet-fg)"
+        />
         <ColorCard label="בפיגור" value={ils(overdue)} bg="var(--amber-bg)" fg="var(--amber-fg)" />
         <ColorCard
           label="צפוי להיכנס השבוע"
@@ -490,7 +535,12 @@ function StockStrip() {
   const dead = useView("v_dead_stock", null, { limit: 2000 });
   const forecast = useView("v_stock_forecast", null, { limit: 2000 });
 
-  if (stock.isLoading) return <Section title="מלאי"><SkeletonBlock rows={2} /></Section>;
+  if (stock.isLoading)
+    return (
+      <Section title="מלאי">
+        <SkeletonBlock rows={2} />
+      </Section>
+    );
   if (stock.isError) return null;
 
   const stockRows = stock.data ?? [];
@@ -499,7 +549,10 @@ function StockStrip() {
     const d = num(get(r, ["days_to_zero", "days_left"]));
     return d > 0 && d <= 7;
   });
-  const units = stockRows.reduce((s, r) => s + num(get(r, ["balance", "qty", "quantity", "on_hand"])), 0);
+  const units = stockRows.reduce(
+    (s, r) => s + num(get(r, ["balance", "qty", "quantity", "on_hand"])),
+    0,
+  );
   const urgent = [...soon].sort(
     (a, b) => num(get(a, ["days_to_zero"])) - num(get(b, ["days_to_zero"])),
   )[0];
@@ -532,7 +585,10 @@ function Insights() {
     <Section title="תובנות">
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <p key={i} className="rounded-[14px] bg-coral-050 px-3.5 py-3 text-[12.5px] text-coral-900">
+          <p
+            key={i}
+            className="rounded-[14px] bg-coral-050 px-3.5 py-3 text-[12.5px] text-coral-900"
+          >
             {str(get(r, ["insight", "text", "message", "title"]))}
           </p>
         ))}

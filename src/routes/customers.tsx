@@ -19,7 +19,10 @@ export const Route = createFileRoute("/customers")({
   head: () => ({
     meta: [
       { title: "לקוחות · ברכת הדרך" },
-      { name: "description", content: "רשימת הלקוחות, מובילים, חייבים ולקוחות שלא חזרו בפנצ'ריית ברכת הדרך." },
+      {
+        name: "description",
+        content: "רשימת הלקוחות, מובילים, חייבים ולקוחות שלא חזרו בפנצ'ריית ברכת הדרך.",
+      },
       { property: "og:title", content: "לקוחות · ברכת הדרך" },
       { property: "og:description", content: "ניהול לקוחות, חובות ורכבים בפנצ'ריית ברכת הדרך." },
       { property: "og:type", content: "website" },
@@ -40,7 +43,11 @@ export const debtOf = (c: Row) => num(get(c, ["debt", "open_balance", "balance",
 export const phoneOf = (c: Row) => str(get(c, ["phone", "mobile", "phonef", "tel"]));
 export const isBusiness = (c: Row) => {
   const t = str(get(c, ["customer_type", "type", "kind"]));
-  return t.includes("עסק") || t.toLowerCase().includes("business") || !!str(get(c, ["tax_id", "vat_number", "hp"]));
+  return (
+    t.includes("עסק") ||
+    t.toLowerCase().includes("business") ||
+    !!str(get(c, ["tax_id", "vat_number", "hp"]))
+  );
 };
 
 type Filter = "all" | "business" | "private" | "repeat" | "debt" | "lost";
@@ -71,14 +78,20 @@ function Customers() {
     const t = term.trim();
     if (t)
       list = list.filter((c) =>
-        [customerName(c), phoneOf(c), str(get(c, ["vehicle_no", "vehicles_list"]))].join(" ").includes(t),
+        [customerName(c), phoneOf(c), str(get(c, ["vehicle_no", "vehicles_list"]))]
+          .join(" ")
+          .includes(t),
       );
     return [...list].sort((a, b) => lifetime(b) - lifetime(a));
   }, [all, filter, term]);
 
   const top = useMemo(() => {
     const key =
-      topBy === "revenue" ? lifetime : topBy === "visits" ? visitsOf : (c: Row) => -new Date(str(get(c, ["first_visit", "since", "created_at"]))).getTime();
+      topBy === "revenue"
+        ? lifetime
+        : topBy === "visits"
+          ? visitsOf
+          : (c: Row) => -new Date(str(get(c, ["first_visit", "since", "created_at"]))).getTime();
     return [...all].sort((a, b) => key(b) - key(a)).slice(0, 5);
   }, [all, topBy]);
 
@@ -103,7 +116,11 @@ function Customers() {
           <>
             <Section first>
               <div className="relative mb-3">
-                <IconSearch size={16} stroke={1.5} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                <IconSearch
+                  size={16}
+                  stroke={1.5}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3"
+                />
                 <input
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
@@ -137,7 +154,9 @@ function Customers() {
                             {isBusiness(c) ? "עסקי" : "פרטי"}
                           </span>
                         </div>
-                        <div className="tnum text-[11px] text-ink-3">{int(visitsOf(c))} ביקורים</div>
+                        <div className="tnum text-[11px] text-ink-3">
+                          {int(visitsOf(c))} ביקורים
+                        </div>
                       </div>
                       <span className="tnum text-[14px] text-ink">{ils(lifetime(c))}</span>
                     </Link>
@@ -164,7 +183,9 @@ function Customers() {
                 {top.map((c, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Avatar initials={initials(customerName(c))} />
-                    <div className="min-w-0 flex-1 truncate text-[14px] text-ink">{customerName(c)}</div>
+                    <div className="min-w-0 flex-1 truncate text-[14px] text-ink">
+                      {customerName(c)}
+                    </div>
                     <span className="tnum text-[12.5px] text-ink-2">
                       {topBy === "visits" ? `${int(visitsOf(c))} ביקורים` : ils(lifetime(c))}
                     </span>
@@ -191,7 +212,10 @@ function Customers() {
                         </div>
                         {phone && (
                           <div className="flex gap-1.5">
-                            <a href={`tel:${phone}`} className="rounded-full border border-line p-2 text-ink-2">
+                            <a
+                              href={`tel:${phone}`}
+                              className="rounded-full border border-line p-2 text-ink-2"
+                            >
                               <IconPhone size={16} stroke={1.5} />
                             </a>
                             <a

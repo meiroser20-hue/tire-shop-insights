@@ -80,7 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "ברכת הדרך · ניהול הפנצ׳רייה" },
-      { name: "description", content: "מערכת ניהול לפנצ'ריית משאיות ברכת הדרך בנתניה — מכירות, לקוחות, מלאי וכספים." },
+      {
+        name: "description",
+        content: "מערכת ניהול לפנצ'ריית משאיות ברכת הדרך בנתניה — מכירות, לקוחות, מלאי וכספים.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "ברכת הדרך · ניהול הפנצ׳רייה" },
       { property: "og:description", content: "מכירות, לקוחות, מלאי וכספים במקום אחד." },

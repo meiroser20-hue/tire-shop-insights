@@ -13,7 +13,10 @@ export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
       { title: "דוחות · ברכת הדרך" },
-      { name: "description", content: "הפקת דוחות מכירות, מלאי, גבייה ולקוחות וייצוא לאקסל בעברית." },
+      {
+        name: "description",
+        content: "הפקת דוחות מכירות, מלאי, גבייה ולקוחות וייצוא לאקסל בעברית.",
+      },
       { property: "og:title", content: "דוחות · ברכת הדרך" },
       { property: "og:description", content: "דוחות וייצוא לאקסל בפנצ'ריית ברכת הדרך." },
       { property: "og:type", content: "website" },

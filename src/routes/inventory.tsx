@@ -72,7 +72,8 @@ function Inventory() {
 
   const rows = useMemo(() => {
     let list = stock.data ?? [];
-    if (view === "dead") list = list.filter((r) => deadKeys.has(`${str(get(r, sizeK))}|${str(get(r, brandK))}`));
+    if (view === "dead")
+      list = list.filter((r) => deadKeys.has(`${str(get(r, sizeK))}|${str(get(r, brandK))}`));
     if (view === "soon")
       list = list.filter((r) => {
         const f = fMap.get(`${str(get(r, sizeK))}|${str(get(r, brandK))}`);
@@ -82,7 +83,11 @@ function Inventory() {
     const t = term.trim();
     if (t)
       list = list.filter((r) =>
-        [str(get(r, sizeK)), str(get(r, brandK)), str(get(r, ["sku", "part", "partname", "catalog"]))]
+        [
+          str(get(r, sizeK)),
+          str(get(r, brandK)),
+          str(get(r, ["sku", "part", "partname", "catalog"])),
+        ]
           .join(" ")
           .includes(t),
       );
@@ -90,7 +95,12 @@ function Inventory() {
   }, [stock.data, view, term, deadKeys, fMap]);
 
   const suppliers = useMemo(
-    () => groupSum(stock.data ?? [], (r) => str(get(r, ["supplier", "vendor"])) || "ללא ספק", (r) => num(get(r, valueK))),
+    () =>
+      groupSum(
+        stock.data ?? [],
+        (r) => str(get(r, ["supplier", "vendor"])) || "ללא ספק",
+        (r) => num(get(r, valueK)),
+      ),
     [stock.data],
   );
 
@@ -148,7 +158,11 @@ function Inventory() {
 
             <Section title="פריטים" action={<ExportButton onClick={doExport} />}>
               <div className="relative mb-3">
-                <IconSearch size={16} stroke={1.5} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                <IconSearch
+                  size={16}
+                  stroke={1.5}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3"
+                />
                 <input
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
@@ -164,7 +178,8 @@ function Inventory() {
                     const bal = num(get(r, balK));
                     const f = fMap.get(`${str(get(r, sizeK))}|${str(get(r, brandK))}`);
                     const days = f ? num(get(f, daysK)) : 0;
-                    const color = bal <= 3 ? "text-coral-600" : bal <= 8 ? "text-[#8A5A0B]" : "text-ink";
+                    const color =
+                      bal <= 3 ? "text-coral-600" : bal <= 8 ? "text-[#8A5A0B]" : "text-ink";
                     return (
                       <div key={i} className="flex items-center gap-3 bg-white px-3 py-2.5">
                         <div className="min-w-0 flex-1">
@@ -172,8 +187,11 @@ function Inventory() {
                             {str(get(r, sizeK))} {str(get(r, brandK))}
                           </div>
                           <div className="tnum truncate text-[11px] text-ink-3">
-                            תנועה אחרונה {shortDate(get(r, ["last_movement", "last_date", "updated_at"]))}
-                            {f && num(get(f, rateK)) ? ` · ${num(get(f, rateK)).toFixed(1)} ליום` : ""}
+                            תנועה אחרונה{" "}
+                            {shortDate(get(r, ["last_movement", "last_date", "updated_at"]))}
+                            {f && num(get(f, rateK))
+                              ? ` · ${num(get(f, rateK)).toFixed(1)} ליום`
+                              : ""}
                           </div>
                         </div>
                         <div className="text-left">
@@ -195,8 +213,12 @@ function Inventory() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {suggestions.map((r, i) => (
-                    <span key={i} className="tnum rounded-full bg-coral-100 px-3 py-1.5 text-[11px] text-coral-800">
-                      {str(get(r, sizeK))} {str(get(r, brandK))} · בעוד {int(num(get(r, daysK)))} ימים
+                    <span
+                      key={i}
+                      className="tnum rounded-full bg-coral-100 px-3 py-1.5 text-[11px] text-coral-800"
+                    >
+                      {str(get(r, sizeK))} {str(get(r, brandK))} · בעוד {int(num(get(r, daysK)))}{" "}
+                      ימים
                     </span>
                   ))}
                 </div>

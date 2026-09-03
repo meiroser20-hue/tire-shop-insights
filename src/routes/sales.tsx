@@ -13,7 +13,16 @@ import {
   SkeletonBlock,
   TimeFilter,
 } from "@/components/kit";
-import { amountOf, customerName, get, groupSum, num, str, type Row, type TimeKey } from "@/lib/data";
+import {
+  amountOf,
+  customerName,
+  get,
+  groupSum,
+  num,
+  str,
+  type Row,
+  type TimeKey,
+} from "@/lib/data";
 import { useView } from "@/lib/hooks";
 import { usePrefs } from "@/lib/prefs";
 import { exportExcel } from "@/lib/export";
@@ -23,7 +32,10 @@ export const Route = createFileRoute("/sales")({
   head: () => ({
     meta: [
       { title: "מכירות · ברכת הדרך" },
-      { name: "description", content: "עסקאות, שעות פיק, פילוח שירותים ומותגים בפנצ'ריית ברכת הדרך." },
+      {
+        name: "description",
+        content: "עסקאות, שעות פיק, פילוח שירותים ומותגים בפנצ'ריית ברכת הדרך.",
+      },
       { property: "og:title", content: "מכירות · ברכת הדרך" },
       { property: "og:description", content: "כל העסקאות והפילוחים של פנצ'ריית ברכת הדרך." },
       { property: "og:type", content: "website" },
@@ -54,7 +66,11 @@ function Sales() {
     const term = q.trim();
     if (!term) return all;
     return all.filter((r) =>
-      [customerName(r), str(get(r, vehicleKeys)), str(get(r, ["part", "sku", "partname", "catalog"]))]
+      [
+        customerName(r),
+        str(get(r, vehicleKeys)),
+        str(get(r, ["part", "sku", "partname", "catalog"])),
+      ]
         .join(" ")
         .includes(term),
     );
@@ -62,7 +78,9 @@ function Sales() {
 
   const total = rows.reduce((s, r) => s + amountOf(r, vat), 0);
   const zero = rows.filter((r) => amountOf(r, vat) === 0);
-  const discounted = rows.filter((r) => num(get(r, ["discount", "discount_amount", "percent"])) > 0);
+  const discounted = rows.filter(
+    (r) => num(get(r, ["discount", "discount_amount", "percent"])) > 0,
+  );
 
   const splitKey = (r: Row) =>
     split === "class"
@@ -82,7 +100,12 @@ function Sales() {
   const byWeekday = useView("v_sales_by_weekday", time, { limit: 200 });
   const byHour = useView("v_sales_by_hour", time, { limit: 500 });
   const owners = useMemo(
-    () => groupSum(rows, (r) => str(get(r, ["owner_login", "owner", "agent"])) || "לא ידוע", (r) => amountOf(r, vat)),
+    () =>
+      groupSum(
+        rows,
+        (r) => str(get(r, ["owner_login", "owner", "agent"])) || "לא ידוע",
+        (r) => amountOf(r, vat),
+      ),
     [rows, vat],
   );
 
@@ -120,7 +143,10 @@ function Sales() {
               <div className="grid grid-cols-3 gap-2.5">
                 <MetricCard label="סה״כ מכירות" value={ils(total)} />
                 <MetricCard label="עסקאות" value={int(rows.length)} />
-                <MetricCard label="ממוצע לעסקה" value={ils(rows.length ? total / rows.length : 0)} />
+                <MetricCard
+                  label="ממוצע לעסקה"
+                  value={ils(rows.length ? total / rows.length : 0)}
+                />
               </div>
             </Section>
 
@@ -147,7 +173,11 @@ function Sales() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[14px] text-ink">{customerName(r)}</div>
                         <div className="tnum truncate text-[11px] text-ink-3">
-                          {[shortDate(get(r, ["doc_date", "date", "created_at"])), str(get(r, vehicleKeys)), str(get(r, serviceKeys))]
+                          {[
+                            shortDate(get(r, ["doc_date", "date", "created_at"])),
+                            str(get(r, vehicleKeys)),
+                            str(get(r, serviceKeys)),
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         </div>
@@ -159,18 +189,21 @@ function Sales() {
               )}
             </Section>
 
-            <Section title="פילוח" action={
-              <Segmented
-                value={split}
-                onChange={setSplit}
-                options={[
-                  { value: "class", label: "סוג רכב" },
-                  { value: "service", label: "שירות" },
-                  { value: "brand", label: "מותג" },
-                  { value: "size", label: "מידה" },
-                ]}
-              />
-            }>
+            <Section
+              title="פילוח"
+              action={
+                <Segmented
+                  value={split}
+                  onChange={setSplit}
+                  options={[
+                    { value: "class", label: "סוג רכב" },
+                    { value: "service", label: "שירות" },
+                    { value: "brand", label: "מותג" },
+                    { value: "size", label: "מידה" },
+                  ]}
+                />
+              }
+            >
               {splitGroups.length === 0 ? (
                 <EmptyState text="אין מספיק נתונים לפילוח הזה בטווח שנבחר" />
               ) : (
@@ -190,7 +223,11 @@ function Sales() {
 
             <Section title="שעות פיק">
               <BarList
-                items={groupSum(byHour.data ?? [], (r) => `${num(get(r, ["hour", "hr"]))}:00`, (r) => amountOf(r, vat)).slice(0, 8)}
+                items={groupSum(
+                  byHour.data ?? [],
+                  (r) => `${num(get(r, ["hour", "hr"]))}:00`,
+                  (r) => amountOf(r, vat),
+                ).slice(0, 8)}
               />
             </Section>
 
@@ -201,7 +238,9 @@ function Sales() {
                   (r) => {
                     const raw = get(r, ["weekday", "dow", "day_of_week", "day"]);
                     const n = num(raw);
-                    return Number.isFinite(n) && String(raw).match(/^\d+$/) ? weekdayName(n % 7) : str(raw);
+                    return Number.isFinite(n) && String(raw).match(/^\d+$/)
+                      ? weekdayName(n % 7)
+                      : str(raw);
                   },
                   (r) => amountOf(r, vat),
                 )}
@@ -252,7 +291,11 @@ function Sales() {
   );
 }
 
-export function BarList({ items }: { items: Array<{ key: string; value: number; count: number }> }) {
+export function BarList({
+  items,
+}: {
+  items: Array<{ key: string; value: number; count: number }>;
+}) {
   if (!items.length) return <EmptyState text="אין נתונים להצגה בטווח שנבחר" />;
   const max = Math.max(...items.map((i) => i.value));
   return (

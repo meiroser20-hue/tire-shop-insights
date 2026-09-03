@@ -1,13 +1,7 @@
 import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
-import {
-  ColorCard,
-  EmptyState,
-  ErrorState,
-  Section,
-  SkeletonBlock,
-} from "@/components/kit";
+import { ColorCard, EmptyState, ErrorState, Section, SkeletonBlock } from "@/components/kit";
 import { BarList } from "./sales";
 import { customerName, get, groupSum, num, str } from "@/lib/data";
 import { useView } from "@/lib/hooks";
@@ -18,7 +12,10 @@ export const Route = createFileRoute("/finance")({
   head: () => ({
     meta: [
       { title: "כספים · ברכת הדרך" },
-      { name: "description", content: "חייבים, גיול חובות, תשלומים לספקים, תזרים וחשבוניות שטרם הופקו." },
+      {
+        name: "description",
+        content: "חייבים, גיול חובות, תשלומים לספקים, תזרים וחשבוניות שטרם הופקו.",
+      },
       { property: "og:title", content: "כספים · ברכת הדרך" },
       { property: "og:description", content: "גבייה, ספקים ותזרים בפנצ'ריית ברכת הדרך." },
       { property: "og:type", content: "website" },
@@ -92,9 +89,24 @@ function Finance() {
           <>
             <Section first title="חייבים לי">
               <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-                <ColorCard label="עד 30 יום" value={ils(aging["30"])} bg="var(--teal-bg)" fg="var(--teal-fg)" />
-                <ColorCard label="30–60" value={ils(aging["60"])} bg="var(--blue-bg)" fg="var(--blue-fg)" />
-                <ColorCard label="60–90" value={ils(aging["90"])} bg="var(--amber-bg)" fg="var(--amber-fg)" />
+                <ColorCard
+                  label="עד 30 יום"
+                  value={ils(aging["30"])}
+                  bg="var(--teal-bg)"
+                  fg="var(--teal-fg)"
+                />
+                <ColorCard
+                  label="30–60"
+                  value={ils(aging["60"])}
+                  bg="var(--blue-bg)"
+                  fg="var(--blue-fg)"
+                />
+                <ColorCard
+                  label="60–90"
+                  value={ils(aging["90"])}
+                  bg="var(--amber-bg)"
+                  fg="var(--amber-fg)"
+                />
                 <ColorCard label="90+" value={ils(aging["90+"])} bg="#FBE9E9" fg="var(--down)" />
               </div>
               <p className="tnum mt-3 text-[12.5px] text-ink-2">סה״כ פתוח: {ils(totalDebt)}</p>
@@ -109,7 +121,10 @@ function Finance() {
                     .sort((a, b) => num(get(b, balK)) - num(get(a, balK)))
                     .slice(0, 15)
                     .map((r, i) => (
-                      <div key={i} className="flex items-center justify-between bg-white px-3 py-2.5 text-[14px]">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between bg-white px-3 py-2.5 text-[14px]"
+                      >
                         <span className="truncate text-ink">{customerName(r)}</span>
                         <span className="tnum text-ink-2">{ils(num(get(r, balK)))}</span>
                       </div>
@@ -121,7 +136,12 @@ function Finance() {
             {canSeeProfit && (
               <>
                 <Section title="אני חייב לספקים">
-                  <ColorCard label="יתרה לספקים" value={ils(supplierDebt)} bg="var(--violet-bg)" fg="var(--violet-fg)" />
+                  <ColorCard
+                    label="יתרה לספקים"
+                    value={ils(supplierDebt)}
+                    bg="var(--violet-bg)"
+                    fg="var(--violet-fg)"
+                  />
                   <div className="mt-3">
                     <BarList items={bySupplier.slice(0, 8)} />
                   </div>
@@ -129,8 +149,18 @@ function Finance() {
 
                 <Section title="תזרים צפוי">
                   <div className="grid grid-cols-2 gap-2.5">
-                    <ColorCard label="כניסות צפויות" value={ils(totalDebt)} bg="var(--teal-bg)" fg="var(--teal-fg)" />
-                    <ColorCard label="יציאות צפויות" value={ils(supplierDebt)} bg="var(--violet-bg)" fg="var(--violet-fg)" />
+                    <ColorCard
+                      label="כניסות צפויות"
+                      value={ils(totalDebt)}
+                      bg="var(--teal-bg)"
+                      fg="var(--teal-fg)"
+                    />
+                    <ColorCard
+                      label="יציאות צפויות"
+                      value={ils(supplierDebt)}
+                      bg="var(--violet-bg)"
+                      fg="var(--violet-fg)"
+                    />
                   </div>
                   <p className="tnum mt-3 text-[12.5px] text-ink-2">
                     מאזן צפוי: {ils(totalDebt - supplierDebt)}
@@ -164,7 +194,9 @@ function Finance() {
                   ))}
                 </div>
               )}
-              <p className="tnum mt-2 text-[11px] text-ink-3">{int(notInvoiced.length)} תעודות ממתינות</p>
+              <p className="tnum mt-2 text-[11px] text-ink-3">
+                {int(notInvoiced.length)} תעודות ממתינות
+              </p>
             </Section>
           </>
         )}
