@@ -55,6 +55,7 @@ import {
   num,
   str,
   uniqueCount,
+  TIME_LABELS,
   type Row,
   type TimeKey,
 } from "@/lib/data";
@@ -92,6 +93,25 @@ const catKeys = ["category", "service_category", "cat"];
 const qtyKeys = ["quantity", "qty", "units", "tquant"];
 const sizeKeys = ["size", "tire_size", "measure"];
 const brandKeys = ["brand", "manufacturer", "maker", "brand_name"];
+
+/** נוסח אחיד: "עוד לא נרשמו נתונים היום / אתמול / השבוע". */
+function noData(range: TimeKey) {
+  return range === "all" ? "עוד לא נרשמו נתונים" : `עוד לא נרשמו נתונים ${TIME_LABELS[range]}`;
+}
+
+/** טבעת אפורה ריקה — שומרת על מקום העוגה כשאין נתונים. */
+function EmptyDonut() {
+  return (
+    <div className="relative size-[120px] shrink-0">
+      <svg viewBox="0 0 100 100" className="size-full">
+        <circle cx="50" cy="50" r="41" fill="none" stroke="#F3F3F6" strokeWidth="10" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="tnum text-[14px] font-500 text-ink-3">{ils(0)}</span>
+      </div>
+    </div>
+  );
+}
 
 const CLASS_COLORS: Record<string, string> = {
   משא: "var(--v-heavy)",
@@ -245,13 +265,6 @@ function Home() {
           <div className="py-6">
             <SkeletonBlock rows={5} />
           </div>
-        ) : rows.length === 0 ? (
-          <div className="py-6">
-            <EmptyState
-              text="עוד לא נרשמו רכבים היום"
-              action={<Pill onClick={() => setSalesRange("yesterday")}>הצג את אתמול</Pill>}
-            />
-          </div>
         ) : (
           <>
             <Metrics rows={rows} prevRows={prev.data ?? []} />
@@ -398,10 +411,8 @@ function HourlySection({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
     return [...m.entries()].sort((a, b) => a[0] - b[0]) as Array<[number, number]>;
   }, [rows, vat]);
 
-  if (!data.length) return null;
-
-  const peak = data.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const quiet = data.reduce((a, b) => (b[1] < a[1] ? b : a));
+  const peak = data.length ? data.reduce((a, b) => (b[1] > a[1] ? b : a)) : null;
+  const quiet = data.length ? data.reduce((a, b) => (b[1] < a[1] ? b : a)) : null;
 
   return (
     <Section
@@ -409,15 +420,24 @@ function HourlySection({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       icon={<IconClockHour4 size={15} stroke={1.6} />}
       action={<RangePicker range={range} onRange={onRange} />}
     >
-      <ColumnChart
-        data={data}
-        valueFmt={(v) => ils(v)}
-        labelOf={(k) => String(k).padStart(2, "0")}
-        subFmt={(k) => `${String(k).padStart(2, "0")}:00`}
-      />
-      <p className="tnum mt-2 text-[11px] text-ink-3">
-        שעת השיא {String(peak[0]).padStart(2, "0")}:00 · {String(quiet[0]).padStart(2, "0")}:00 שקטה
-      </p>
+      {data.length === 0 ? (
+        <EmptyState text={noData(range)} />
+      ) : (
+        <>
+          <ColumnChart
+            data={data}
+            valueFmt={(v) => ils(v)}
+            labelOf={(k) => String(k).padStart(2, "0")}
+            subFmt={(k) => `${String(k).padStart(2, "0")}:00`}
+          />
+          {peak && quiet && (
+            <p className="tnum mt-2 text-[11px] text-ink-3">
+              שעת השיא {String(peak[0]).padStart(2, "0")}:00 · {String(quiet[0]).padStart(2, "0")}
+              :00 שקטה
+            </p>
+          )}
+        </>
+      )}
     </Section>
   );
 }
@@ -444,7 +464,7 @@ function ClassSplit({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       (r) => str(get(r, vehicleKeys)),
     );
   const total = groups.reduce((s, g) => s + g.value, 0);
-  if (!groups.length || !total) return null;
+  const empty = !groups.length || !total;
 
   const fallback = ["var(--red-600)", "var(--red-400)", "var(--red-200)", "var(--red-100)"];
   const top = groups.slice(0, 5);
@@ -459,27 +479,38 @@ function ClassSplit({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       action={<RangePicker range={range} onRange={onRange} />}
     >
       <div className="flex items-center gap-5">
-        <Donut
-          slices={top.map((g, i) => ({ key: g.key, value: g.value, color: colorOf(g.key, i) }))}
-          center={ils(total)}
-          numericCenter={total}
-          sub={cars(vehicles)}
-        />
-        <div className="min-w-0 flex-1 space-y-2">
-          {top.map((g, i) => (
-            <div key={g.key} className="flex items-center gap-2 text-[12.5px]">
-              <span
-                className="size-2.5 shrink-0 rounded-full"
-                style={{ background: colorOf(g.key, i) }}
-              />
-              <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
-              <span className="tnum text-ink-3">
-                <AnimatedInt value={(g.value / total) * 100} />%
-              </span>
-              <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
+        {empty ? (
+          <>
+            <EmptyDonut />
+            <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-ink-3">
+              {noData(range)}
+            </p>
+          </>
+        ) : (
+          <>
+            <Donut
+              slices={top.map((g, i) => ({ key: g.key, value: g.value, color: colorOf(g.key, i) }))}
+              center={ils(total)}
+              numericCenter={total}
+              sub={cars(vehicles)}
+            />
+            <div className="min-w-0 flex-1 space-y-2">
+              {top.map((g, i) => (
+                <div key={g.key} className="flex items-center gap-2 text-[12.5px]">
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ background: colorOf(g.key, i) }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
+                  <span className="tnum text-ink-3">
+                    <AnimatedInt value={(g.value / total) * 100} />%
+                  </span>
+                  <span className="tnum text-ink-2">{cars(carsIn(g.key))}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
     </Section>
   );
@@ -514,7 +545,7 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       action={<RangePicker range={range} onRange={onRange} />}
     >
       {groups.length === 0 ? (
-        <EmptyState text="אין עסקאות בטווח שנבחר" />
+        <EmptyState text={noData(range)} />
       ) : (
         <div className="space-y-3.5">
           {groups.map((g, i) => (
@@ -561,7 +592,6 @@ function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
     }
     return [...grouped.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 4);
   }, [rows, vat]);
-  if (!top.length) return null;
 
   return (
     <Section
@@ -569,15 +599,19 @@ function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       icon={<IconTrophy size={15} stroke={1.6} />}
       action={<RangePicker range={range} onRange={onRange} />}
     >
-      <RankedList
-        items={top.map(([name, item], i) => ({
-          key: `${name}-${i}`,
-          label: name,
-          value: item.value,
-          valueText: ils(item.value),
-          sub: `${visits(item.visits.size)} · ${cars(item.vehicles.size)}`,
-        }))}
-      />
+      {top.length === 0 ? (
+        <EmptyState text={noData(range)} />
+      ) : (
+        <RankedList
+          items={top.map(([name, item], i) => ({
+            key: `${name}-${i}`,
+            label: name,
+            value: item.value,
+            valueText: ils(item.value),
+            sub: `${visits(item.visits.size)} · ${cars(item.vehicles.size)}`,
+          }))}
+        />
+      )}
     </Section>
   );
 }
@@ -604,37 +638,39 @@ function TopBrands({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
     ).slice(0, 4);
   }, [rows, vat]);
 
-  if (!brands.length) return null;
-
   return (
     <Section
       title="מותגים מובילים"
       icon={<IconAward size={15} stroke={1.6} />}
       action={<RangePicker range={range} onRange={onRange} options={["week", "month", "all"]} />}
     >
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        {brands.map((b, i) => (
-          <div
-            key={b.key}
-            className="tap rounded-[14px] px-3.5 py-3"
-            style={
-              i === 0
-                ? {
-                    background:
-                      "linear-gradient(135deg,rgba(196,43,78,.09) 0%,rgba(196,43,78,.02) 70%,#fff 100%)",
-                    border: "1px solid rgba(196,43,78,.11)",
-                  }
-                : { background: "var(--surf)" }
-            }
-          >
-            <div className="truncate text-[13.5px] font-500 text-ink">{b.key}</div>
-            <div className="tnum text-[10.5px] text-ink-3">{int(b.count)} יח׳</div>
-            <div className="tnum mt-1.5 text-[14px] font-500 text-ink">
-              <AnimatedMoney value={b.value} />
+      {brands.length === 0 ? (
+        <EmptyState text={noData(range)} />
+      ) : (
+        <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          {brands.map((b, i) => (
+            <div
+              key={b.key}
+              className="tap rounded-[14px] px-3.5 py-3"
+              style={
+                i === 0
+                  ? {
+                      background:
+                        "linear-gradient(135deg,rgba(196,43,78,.09) 0%,rgba(196,43,78,.02) 70%,#fff 100%)",
+                      border: "1px solid rgba(196,43,78,.11)",
+                    }
+                  : { background: "var(--surf)" }
+              }
+            >
+              <div className="truncate text-[13.5px] font-500 text-ink">{b.key}</div>
+              <div className="tnum text-[10.5px] text-ink-3">{int(b.count)} יח׳</div>
+              <div className="tnum mt-1.5 text-[14px] font-500 text-ink">
+                <AnimatedMoney value={b.value} />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </Section>
   );
 }
@@ -652,20 +688,23 @@ function TopSizes({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       ).slice(0, 10),
     [rows, vat],
   );
-  if (!sizes.length) return null;
   return (
     <Section
       title="מידות מובילות"
       icon={<IconRulerMeasure size={15} stroke={1.6} />}
       action={<RangePicker range={range} onRange={onRange} />}
     >
-      <VolumeChips
-        items={sizes.map((s) => ({
-          key: s.key,
-          value: s.value,
-          text: `${s.key} · ${int(s.count)} יח׳`,
-        }))}
-      />
+      {sizes.length === 0 ? (
+        <EmptyState text={noData(range)} />
+      ) : (
+        <VolumeChips
+          items={sizes.map((s) => ({
+            key: s.key,
+            value: s.value,
+            text: `${s.key} · ${int(s.count)} יח׳`,
+          }))}
+        />
+      )}
     </Section>
   );
 }
@@ -693,35 +732,39 @@ function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) 
         <RangePicker range={range} onRange={onRange} options={["today", "yesterday", "week"]} />
       }
     >
-      <Timeline
-        items={recent.map((r, i) => {
-          const name = customerName(r);
-          const repeats = counts.get(name) ?? 1;
-          const plate = str(get(r, vehicleKeys));
-          return {
-            key: `${i}`,
-            time: timeOf(get(r, ["signed_at", "doc_time", "doc_date"])),
-            title: (
-              <span className="flex items-center gap-2">
-                <span className="truncate">{name}</span>
-                {repeats > 1 && <ReturningTag times={repeats} />}
-              </span>
-            ),
-            sub: (
-              <span className="flex items-center gap-2">
-                {plate && <Plate>{plate}</Plate>}
-                <span>
-                  {[str(get(r, ["family_desc", "category", "part_des"])), str(r["vehicle_class"])]
-                    .filter(Boolean)
-                    .join(" · ")}
+      {recent.length === 0 ? (
+        <EmptyState text={noData(range)} />
+      ) : (
+        <Timeline
+          items={recent.map((r, i) => {
+            const name = customerName(r);
+            const repeats = counts.get(name) ?? 1;
+            const plate = str(get(r, vehicleKeys));
+            return {
+              key: `${i}`,
+              time: timeOf(get(r, ["signed_at", "doc_time", "doc_date"])),
+              title: (
+                <span className="flex items-center gap-2">
+                  <span className="truncate">{name}</span>
+                  {repeats > 1 && <ReturningTag times={repeats} />}
                 </span>
-              </span>
-            ),
-            value: ils(amountOf(r, vat)),
-            numericValue: amountOf(r, vat),
-          };
-        })}
-      />
+              ),
+              sub: (
+                <span className="flex items-center gap-2">
+                  {plate && <Plate>{plate}</Plate>}
+                  <span>
+                    {[str(get(r, ["family_desc", "category", "part_des"])), str(r["vehicle_class"])]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+              ),
+              value: ils(amountOf(r, vat)),
+              numericValue: amountOf(r, vat),
+            };
+          })}
+        />
+      )}
       {rows.length > shown && (
         <button
           onClick={() => setShown((n) => n + 10)}
@@ -745,7 +788,6 @@ function FinanceStrip() {
         <SkeletonBlock rows={2} />
       </Section>
     );
-  if (q.isError || !(q.data ?? []).length) return null;
   const rows = q.data ?? [];
   const openSum = rows.reduce(
     (s, r) => s + num(get(r, ["open_debt", "open_balance", "balance"])),
@@ -761,36 +803,40 @@ function FinanceStrip() {
       icon={<IconCoins size={15} stroke={1.6} />}
       action={<RangePicker range={financeRange} onRange={setFinanceRange} />}
     >
-      <div className="grid grid-cols-2 gap-3">
-        <ColorCard
-          label="חייבים לי"
-          value={ils(openSum)}
-          numericValue={openSum}
-          bg="62,142,114"
-          fg="#276A54"
-        />
-        <ColorCard
-          label="בפיגור"
-          value={ils(overdue)}
-          numericValue={overdue}
-          bg="196,68,75"
-          fg="#9A3239"
-        />
-        <ColorCard
-          label="עד 30 יום"
-          value={ils(soon)}
-          numericValue={soon}
-          bg="192,138,46"
-          fg="#8A6119"
-        />
-        <ColorCard
-          label="עתידי"
-          value={ils(future)}
-          numericValue={future}
-          bg="79,158,134"
-          fg="#2F7A61"
-        />
-      </div>
+      {q.isError || rows.length === 0 ? (
+        <EmptyState text="עוד לא נרשמו חובות פתוחים" />
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          <ColorCard
+            label="חייבים לי"
+            value={ils(openSum)}
+            numericValue={openSum}
+            bg="62,142,114"
+            fg="#276A54"
+          />
+          <ColorCard
+            label="בפיגור"
+            value={ils(overdue)}
+            numericValue={overdue}
+            bg="196,68,75"
+            fg="#9A3239"
+          />
+          <ColorCard
+            label="עד 30 יום"
+            value={ils(soon)}
+            numericValue={soon}
+            bg="192,138,46"
+            fg="#8A6119"
+          />
+          <ColorCard
+            label="עתידי"
+            value={ils(future)}
+            numericValue={future}
+            bg="79,158,134"
+            fg="#2F7A61"
+          />
+        </div>
+      )}
     </Section>
   );
 }
@@ -807,8 +853,6 @@ function StockStrip() {
         <SkeletonBlock rows={2} />
       </Section>
     );
-  if (stock.isError) return null;
-
   const stockRows = stock.data ?? [];
   const fRows = forecast.data ?? [];
   const soon = fRows.filter((r) => {
@@ -820,29 +864,33 @@ function StockStrip() {
 
   return (
     <Section title="מלאי" icon={<IconStack2 size={15} stroke={1.6} />}>
-      <div className="grid grid-cols-3 gap-2.5">
-        <Gauge
-          value={soon.length}
-          max={Math.max(10, fRows.length)}
-          label="ייגמר השבוע"
-          valueText={int(soon.length)}
-          color="var(--red-600)"
-        />
-        <Gauge
-          value={units}
-          max={Math.max(1, units)}
-          label="יחידות במלאי"
-          valueText={int(units)}
-          color="var(--s-balance)"
-        />
-        <Gauge
-          value={dead.length}
-          max={Math.max(10, stockRows.length)}
-          label="מלאי מת"
-          valueText={int(dead.length)}
-          color="var(--s-mount)"
-        />
-      </div>
+      {stock.isError ? (
+        <EmptyState text="לא הצלחנו לטעון את נתוני המלאי" />
+      ) : (
+        <div className="grid grid-cols-3 gap-2.5">
+          <Gauge
+            value={soon.length}
+            max={Math.max(10, fRows.length)}
+            label="ייגמר השבוע"
+            valueText={int(soon.length)}
+            color="var(--red-600)"
+          />
+          <Gauge
+            value={units}
+            max={Math.max(1, units)}
+            label="יחידות במלאי"
+            valueText={int(units)}
+            color="var(--s-balance)"
+          />
+          <Gauge
+            value={dead.length}
+            max={Math.max(10, stockRows.length)}
+            label="מלאי מת"
+            valueText={int(dead.length)}
+            color="var(--s-mount)"
+          />
+        </div>
+      )}
     </Section>
   );
 }
