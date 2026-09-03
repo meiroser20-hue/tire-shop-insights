@@ -4,6 +4,7 @@ import { IconArrowRight, IconBrandWhatsapp, IconFlag, IconPhone } from "@tabler/
 import { Page, ScreenHeader } from "@/components/AppShell";
 import {
   Avatar,
+  Bar,
   EmptyState,
   ErrorState,
   Plate,
@@ -49,7 +50,7 @@ function CustomerCard() {
   const [tab, setTab] = useState<Tab>("sales");
   const [time, setTime] = useState<TimeKey>("all");
 
-  const customers = useView("v_customers_unified", null, { limit: 3000 });
+  const customers = useView("v_customers_full", null, { limit: 3000 });
   const sales = useView("v_sales", time, { limit: 5000 });
   const vehicles = useView("v_vehicles", null, { limit: 2000 });
   const obligo = useView("customer_obligo", null, { limit: 2000 });
@@ -138,6 +139,8 @@ function CustomerCard() {
     ? debtOf(c) ||
       myObligo.reduce((s, r) => s + num(get(r, ["open_balance", "balance", "amount"])), 0)
     : 0;
+  const creditMax = c ? num(get(c, ["credit_max"])) : 0;
+  const creditUsed = c ? num(get(c, ["credit_used"])) : 0;
 
   return (
     <>
@@ -248,9 +251,7 @@ function CustomerCard() {
                         >
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-[13.5px] text-ink">{l.name}</div>
-                            {l.family && (
-                              <div className="text-[10.5px] text-ink-3">{l.family}</div>
-                            )}
+                            {l.family && <div className="text-[10.5px] text-ink-3">{l.family}</div>}
                           </div>
                           {l.qty > 0 && (
                             <span className="tnum shrink-0 rounded-full bg-surf px-2 py-0.5 text-[11px] text-ink-2">
@@ -302,6 +303,7 @@ function CustomerCard() {
 
         {tab === "debt" && (
           <Section title="חוב">
+            {creditMax > 0 && <CreditLine max={creditMax} used={creditUsed} />}
             {obligo.isLoading ? (
               <SkeletonBlock rows={3} />
             ) : myObligo.length === 0 ? (
@@ -339,6 +341,35 @@ function CustomerCard() {
         )}
       </Page>
     </>
+  );
+}
+
+/** ניצול מסגרת אשראי. מוצג רק כשיש מסגרת מאושרת. */
+function CreditLine({ max, used }: { max: number; used: number }) {
+  const ratio = max > 0 ? used / max : 0;
+  const percent = Math.round(ratio * 100);
+  const tight = percent >= 80;
+  const tone = tight ? "var(--red-600)" : "var(--v-tractor)";
+  return (
+    <div className="mb-4 rounded-[16px] border border-line bg-white px-4 py-3.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[12.5px] text-ink-2">מסגרת אשראי</span>
+        <span
+          className="tnum text-[12.5px]"
+          style={{ color: tight ? "var(--red-600)" : "var(--ink)" }}
+        >
+          {percent}% מנוצל
+        </span>
+      </div>
+      <div className="mt-2.5">
+        <Bar value={used} max={max} color={tone} />
+      </div>
+      <div className="tnum mt-2 flex justify-between text-[10.5px] text-ink-3">
+        <span>נוצל {ils(used)}</span>
+        <span>מסגרת {ils(max)}</span>
+      </div>
+      {tight && <p className="mt-2 text-[11px] text-red-700">הלקוח קרוב לתקרת המסגרת</p>}
+    </div>
   );
 }
 
