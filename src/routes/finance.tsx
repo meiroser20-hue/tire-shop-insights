@@ -29,27 +29,46 @@ export const Route = createFileRoute("/finance")({
   ),
 });
 
-const balK = ["open_balance", "balance", "amount", "debt"];
+const balK = ["open_debt", "open_balance", "balance", "debt"];
 
 function Finance() {
   const canSeeProfit = useCanSeeProfit();
   const obligo = useView("customer_obligo", null, { limit: 3000 });
   const purchases = useView("purchase_invoices", null, { limit: 3000 });
   const docs = useView("delivery_docs", null, { limit: 3000 });
+  const sales = useView("v_sales", null, { limit: 5000 });
 
-  const rows = obligo.data ?? [];
+  const nameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of sales.data ?? []) {
+      const code = str(r["cust_name"]);
+      const des = str(r["cust_des"]);
+      if (code && des) m.set(code, des);
+    }
+    return m;
+  }, [sales.data]);
+  const nameOf = (r: Record<string, unknown>) =>
+    nameMap.get(str(r["cust_name"])) || customerName(r);
+
+  const rows = useMemo(() => {
+    const all = obligo.data ?? [];
+    if (!all.length) return all;
+    const latest = all
+      .map((r) => str(r["snapshot_date"]))
+      .sort()
+      .slice(-1)[0];
+    const scoped = latest ? all.filter((r) => str(r["snapshot_date"]) === latest) : all;
+    return scoped.filter((r) => num(get(r, balK)) !== 0);
+  }, [obligo.data]);
   const totalDebt = rows.reduce((s, r) => s + num(get(r, balK)), 0);
 
   const aging = useMemo(() => {
     const buckets = { "30": 0, "60": 0, "90": 0, "90+": 0 };
     for (const r of rows) {
-      const due = get(r, ["due_date", "date", "doc_date"]);
-      const amount = num(get(r, balK));
-      const days = due ? Math.floor((Date.now() - new Date(str(due)).getTime()) / 86400000) : 0;
-      if (days <= 30) buckets["30"] += amount;
-      else if (days <= 60) buckets["60"] += amount;
-      else if (days <= 90) buckets["90"] += amount;
-      else buckets["90+"] += amount;
+      buckets["30"] += num(get(r, ["days_1_30"]));
+      buckets["60"] += num(get(r, ["days_31_60"]));
+      buckets["90"] += num(get(r, ["days_61_90"]));
+      buckets["90+"] += num(get(r, ["over_90"]));
     }
     return buckets;
   }, [rows]);
@@ -59,9 +78,10 @@ function Finance() {
     0,
   );
 
-  const notInvoiced = (docs.data ?? []).filter(
-    (r) => str(get(r, ["invoiced", "is_invoiced"])).toUpperCase() === "N",
-  );
+  const notInvoiced = (docs.data ?? []).filter((r) => {
+    const v = get(r, ["invoiced", "is_invoiced"]);
+    return v === false || str(v).toUpperCase() === "N" || str(v).toUpperCase() === "FALSE";
+  });
 
   const bySupplier = useMemo(
     () =>
@@ -125,7 +145,7 @@ function Finance() {
                         key={i}
                         className="flex items-center justify-between bg-white px-3 py-2.5 text-[14px]"
                       >
-                        <span className="truncate text-ink">{customerName(r)}</span>
+                        <span className="truncate text-ink">{nameOf(r)}</span>
                         <span className="tnum text-ink-2">{ils(num(get(r, balK)))}</span>
                       </div>
                     ))}
@@ -181,14 +201,14 @@ function Finance() {
                   {notInvoiced.slice(0, 50).map((r, i) => (
                     <div key={i} className="flex items-center justify-between bg-white px-3 py-2.5">
                       <div className="min-w-0">
-                        <div className="truncate text-[14px] text-ink">{customerName(r)}</div>
+                        <div className="truncate text-[14px] text-ink">{nameOf(r)}</div>
                         <div className="tnum text-[11px] text-ink-3">
                           תעודה {str(get(r, ["doc_no", "docno", "number", "id"]))} ·{" "}
                           {shortDate(get(r, ["doc_date", "date"]))}
                         </div>
                       </div>
                       <span className="tnum text-[14px] text-ink">
-                        {ils(num(get(r, ["amount_net", "amount", "total"])))}
+                        {ils(num(get(r, ["sum_after", "total", "amount"])))}
                       </span>
                     </div>
                   ))}
