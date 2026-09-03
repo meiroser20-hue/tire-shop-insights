@@ -50,9 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white lg:bg-[#2E0C17] lg:p-3">
       <DesktopNav />
-      <main className="app-surface min-h-screen min-w-0 pb-28 lg:mr-[252px] lg:pb-10">
+      <main className="app-surface min-h-screen min-w-0 pb-28 lg:mr-[248px] lg:min-h-[calc(100vh-24px)] lg:overflow-hidden lg:rounded-[24px] lg:pb-10">
         {children}
       </main>
       <MobileNav />
@@ -143,41 +143,60 @@ function DesktopNav() {
   const isActive = useActive();
   const { profile, signOut } = useAuth();
   return (
-    <aside className="fixed bottom-0 right-0 top-0 z-40 hidden w-[252px] flex-col border-l border-black/[.06] bg-white px-[14px] py-6 lg:flex">
-      <div className="mb-7 flex items-center gap-3 px-2">
-        <div className="coral-grad flex size-7 items-center justify-center rounded-full text-[10px] font-600 text-white">
+    <aside className="fixed bottom-3 right-3 top-3 z-40 hidden w-[236px] flex-col px-3 py-5 lg:flex">
+      <div className="mb-8 flex items-center gap-3 px-2">
+        <div className="flex size-8 items-center justify-center rounded-[10px] bg-white/[.12] text-[10px] font-600 text-white">
           ב״ד
         </div>
         <div>
-          <div className="text-[15px] font-600 text-ink">ברכת הדרך</div>
-          <div className="text-[11px] text-ink-3">ניהול חכם</div>
+          <div className="text-[15px] font-600 text-white">ברכת הדרך</div>
+          <div className="text-[10.5px] text-white/45">ניהול חכם</div>
         </div>
       </div>
+
+      <div className="mb-2 px-3 text-[9.5px] tracking-[.14em] text-white/35">ניווט</div>
+
       <nav className="flex-1 space-y-1">
         {NAV.map(({ to, label, Icon }) => (
           <Link
             key={to}
             to={to}
-            className={`relative flex h-[42px] items-center gap-3 rounded-[10px] px-3 text-[14px] transition-colors duration-150 ${
+            className={`flex h-[44px] items-center gap-3 rounded-[13px] px-3 text-[13.5px] transition-all duration-200 ${
               isActive(to)
-                ? "bg-red-050 font-500 text-red-700 after:absolute after:bottom-2 after:right-0 after:top-2 after:w-[3px] after:rounded-full after:bg-red-600"
-                : "text-ink-2 hover:bg-[#FAFAFB]"
+                ? "bg-white/[.11] font-500 text-white"
+                : "text-white/55 hover:bg-white/[.05] hover:text-white/80"
             }`}
           >
-            <Icon size={18} stroke={1.5} />
+            <span
+              className={`flex size-8 items-center justify-center rounded-full transition-colors ${
+                isActive(to) ? "bg-white text-[#8E1B36]" : "bg-white/[.07]"
+              }`}
+            >
+              <Icon size={16} stroke={1.6} />
+            </span>
             {label}
           </Link>
         ))}
       </nav>
-      <div className="hairline mt-3 pt-3">
-        <div className="px-3 text-[12.5px] text-ink">{profile?.full_name ?? "משתמש"}</div>
-        <button
-          onClick={() => void signOut()}
-          className="mt-1 flex w-full items-center gap-2 rounded-[14px] px-3 py-2 text-[12.5px] text-ink-2 hover:bg-surf"
-        >
-          <IconLogout size={16} stroke={1.5} />
-          התנתקות
-        </button>
+
+      <div className="mt-3 border-t border-white/10 pt-4">
+        <div className="mb-2 px-3 text-[9.5px] tracking-[.14em] text-white/35">חשבון</div>
+        <div className="flex items-center gap-3 px-2">
+          <div className="flex size-9 items-center justify-center rounded-full bg-white/[.12] text-[11px] font-600 text-white">
+            {(profile?.full_name ?? "מ").slice(0, 1)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] text-white">
+              {profile?.full_name ?? "משתמש"}
+            </div>
+            <button
+              onClick={() => void signOut()}
+              className="text-[11px] text-white/45 transition-colors hover:text-white/75"
+            >
+              התנתקות
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
   );
