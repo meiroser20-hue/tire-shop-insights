@@ -22,9 +22,9 @@ export function Section({
   first?: boolean;
 }) {
   return (
-    <section className={first ? "py-4" : "py-5"}>
+    <section className={first ? "pb-2 pt-4" : "py-7"}>
       {(title || action) && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           {title && (
             <h2 className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-[15.5px] font-600 text-ink">
               {icon && <span className="section-rule">{icon}</span>}
@@ -72,11 +72,20 @@ export function TimeFilter({
   options?: TimeKey[];
 }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+    <div className="inline-flex shrink-0 rounded-full bg-[#F4F4F7] p-[3px]">
       {options.map((o) => (
-        <Pill key={o} active={value === o} onClick={() => onChange(o)}>
+        <button
+          key={o}
+          type="button"
+          onClick={() => onChange(o)}
+          className={`rounded-full px-2.5 py-1 text-[10.5px] transition-all duration-200 ${
+            value === o
+              ? "bg-white font-500 text-red-700 shadow-[0_1px_3px_rgba(0,0,0,.07)]"
+              : "text-ink-3 hover:text-ink-2"
+          }`}
+        >
           {TIME_LABELS[o]}
-        </Pill>
+        </button>
       ))}
     </div>
   );
@@ -338,10 +347,10 @@ export function ColorCard({
   const animated = useCountUp(numericValue ?? 0);
   const grad = bg.includes("gradient")
     ? bg
-    : `linear-gradient(150deg, rgba(${bg},.15) 0%, rgba(${bg},.05) 45%, rgba(255,255,255,1) 90%)`;
+    : `radial-gradient(110% 90% at 100% 0%, rgba(${bg},.19) 0%, rgba(${bg},.06) 42%, rgba(255,255,255,0) 78%), #ffffff`;
   return (
     <div
-      className={`tap rounded-[16px] px-4 py-3.5 ${className}`}
+      className={`tap rounded-[18px] px-4 py-4 ${className}`}
       style={{ background: grad, color: fg }}
     >
       <div className="text-[11px] opacity-85">{label}</div>
