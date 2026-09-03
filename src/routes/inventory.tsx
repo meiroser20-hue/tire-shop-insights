@@ -80,8 +80,7 @@ function Inventory() {
 
   const rows = useMemo(() => {
     let list = stock.data ?? [];
-    if (view === "dead")
-      list = list.filter((r) => deadKeys.has(itemKey(r)));
+    if (view === "dead") list = list.filter((r) => deadKeys.has(itemKey(r)));
     if (view === "soon")
       list = list.filter((r) => {
         const f = fMap.get(itemKey(r));
@@ -91,9 +90,7 @@ function Inventory() {
     const t = term.trim();
     if (t)
       list = list.filter((r) =>
-        [itemTitle(r), str(get(r, partK)), str(get(r, ["family_desc"]))]
-          .join(" ")
-          .includes(t),
+        [itemTitle(r), str(get(r, partK)), str(get(r, ["family_desc"]))].join(" ").includes(t),
       );
     return list;
   }, [stock.data, view, term, deadKeys, fMap]);
@@ -124,7 +121,7 @@ function Inventory() {
     exportExcel(
       "מלאי",
       rows.map((r) => ({
-        מק״ט: str(get(r, partK)),
+        "מק״ט": str(get(r, partK)),
         תיאור: str(get(r, desK)),
         מחסן: str(get(r, whK)),
         משפחה: str(get(r, ["family_desc"])),
@@ -154,7 +151,11 @@ function Inventory() {
                   <MetricCard label="ייגמר השבוע" value={int(soonCount)} sub="פריטים" />
                 </button>
                 <button onClick={() => setView("dead")} className="text-right">
-                  <MetricCard label="מלאי מת" value={int(deadRows.length)} sub={`ללא תנועה ${DEAD_DAYS}+ יום`} />
+                  <MetricCard
+                    label="מלאי מת"
+                    value={int(deadRows.length)}
+                    sub={`ללא תנועה ${DEAD_DAYS}+ יום`}
+                  />
                 </button>
                 <button onClick={() => setView("all")} className="text-right">
                   <MetricCard label="יחידות תקועות" value={int(stuckUnits)} sub="במלאי מת" />
