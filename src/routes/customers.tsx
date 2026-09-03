@@ -13,7 +13,7 @@ import {
 } from "@/components/kit";
 import { customerName, get, initials, num, str, type Row } from "@/lib/data";
 import { useView } from "@/lib/hooks";
-import { ils, int } from "@/lib/format";
+import { ils, int, visits } from "@/lib/format";
 
 export const Route = createFileRoute("/customers")({
   head: () => ({
@@ -154,9 +154,7 @@ function Customers() {
                             {isBusiness(c) ? "עסקי" : "פרטי"}
                           </span>
                         </div>
-                        <div className="tnum text-[11px] text-ink-3">
-                          {int(visitsOf(c))} ביקורים
-                        </div>
+                        <div className="tnum text-[11px] text-ink-3">{visits(visitsOf(c))}</div>
                       </div>
                       <span className="tnum text-[14px] text-ink">{ils(lifetime(c))}</span>
                     </Link>
@@ -187,7 +185,7 @@ function Customers() {
                       {customerName(c)}
                     </div>
                     <span className="tnum text-[12.5px] text-ink-2">
-                      {topBy === "visits" ? `${int(visitsOf(c))} ביקורים` : ils(lifetime(c))}
+                      {topBy === "visits" ? `${visits(visitsOf(c))}` : ils(lifetime(c))}
                     </span>
                   </div>
                 ))}
@@ -207,7 +205,7 @@ function Customers() {
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[14px] text-ink">{customerName(c)}</div>
                           <div className="tnum text-[11px] text-ink-3">
-                            {int(visitsOf(c))} ביקורים · {ils(lifetime(c))}
+                            {visits(visitsOf(c))} · {ils(lifetime(c))}
                           </div>
                         </div>
                         {phone && (
