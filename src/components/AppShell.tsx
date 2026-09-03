@@ -15,7 +15,7 @@ import {
   IconDotsCircleHorizontal,
 } from "@tabler/icons-react";
 import { useAuth } from "@/lib/auth";
-import { LOGO_URL, displayName } from "@/lib/brand";
+import { LOGO_ON_LIGHT, displayName } from "@/lib/brand";
 import { longDate } from "@/lib/format";
 
 const NAV = [
@@ -40,7 +40,7 @@ function LogoBadge({ size = 36, className = "" }: { size?: number; className?: s
       }}
     >
       <img
-        src={LOGO_URL}
+        src={LOGO_ON_LIGHT}
         alt="ברכת הדרך"
         className="size-full object-contain"
         style={{ padding: Math.round(size * 0.16) }}
