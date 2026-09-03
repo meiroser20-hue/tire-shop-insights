@@ -299,11 +299,14 @@ function Customers() {
                   />
                 }
               >
-                <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0">
-                  {top.map((c, i) => (
-                    <TopCard key={`${custId(c)}-${i}`} c={c} rank={i + 1} by={topBy} />
-                  ))}
-                </div>
+                <Podium items={top.slice(0, 3)} by={topBy} />
+                {top.length > 3 && (
+                  <div className="mt-5">
+                    {top.slice(3).map((c, i) => (
+                      <TopRow key={`${custId(c)}-${i}`} c={c} rank={i + 4} by={topBy} />
+                    ))}
+                  </div>
+                )}
               </Section>
             )}
 
@@ -425,41 +428,105 @@ function CustomerRow({ c }: { c: Row }) {
   );
 }
 
-function TopCard({ c, rank, by }: { c: Row; rank: number; by: "revenue" | "visits" | "tenure" }) {
-  const medal = ["#C9A227", "#A8AEB8", "#B5793F"][rank - 1];
+const MEDALS = ["#C9A227", "#A8AEB8", "#B5793F"];
+
+type By = "revenue" | "visits" | "tenure";
+
+const topValue = (c: Row, by: By) => (by === "visits" ? int(visitsOf(c)) : ils(lifetime(c)));
+
+function topSub(c: Row, by: By) {
   const since = get(c, ["first_visit", "since", "created_at"]);
+  if (by === "visits") return "ביקורים";
+  if (by === "tenure" && since) return `מאז ${shortDate(since)}`;
+  return visits(visitsOf(c));
+}
+
+/** שלושת הראשונים על פודיום — הראשון במרכז וגבוה יותר. */
+function Podium({ items, by }: { items: Row[]; by: By }) {
+  if (!items.length) return null;
+  const [first, second, third] = items;
+  /* ב-RTL הילד הראשון יושב בימין, ולכן הסדר הוא: שני · ראשון · שלישי */
+  const order: Array<{ c: Row | undefined; rank: number }> = [
+    { c: second, rank: 2 },
+    { c: first, rank: 1 },
+    { c: third, rank: 3 },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 items-end gap-2.5">
+      {order.map(({ c, rank }) =>
+        c ? (
+          <PodiumCard key={`${custId(c)}-${rank}`} c={c} rank={rank} by={by} />
+        ) : (
+          <span key={rank} />
+        ),
+      )}
+    </div>
+  );
+}
+
+function PodiumCard({ c, rank, by }: { c: Row; rank: number; by: By }) {
+  const medal = MEDALS[rank - 1] ?? "var(--ink-3)";
+  const lead = rank === 1;
   return (
     <Link
       to="/customers/$id"
       params={{ id: custId(c) || customerName(c) }}
-      className="tap w-[168px] shrink-0 rounded-[18px] px-3.5 py-3.5"
+      className={`tap flex flex-col items-center rounded-[18px] px-2.5 text-center ${
+        lead ? "pb-5 pt-6" : "pb-4 pt-4"
+      }`}
       style={{
-        background: medal
-          ? `linear-gradient(150deg, color-mix(in oklab, ${medal} 16%, #ffffff) 0%, rgba(255,255,255,.96) 60%)`
-          : "#ffffff",
-        border: `1px solid ${medal ? `color-mix(in oklab, ${medal} 28%, #ffffff)` : "var(--line)"}`,
+        background: `linear-gradient(170deg, color-mix(in srgb, ${medal} ${lead ? 20 : 13}%, #ffffff) 0%, rgba(255,255,255,.96) 72%)`,
+        border: `1px solid color-mix(in srgb, ${medal} ${lead ? 34 : 24}%, #ffffff)`,
       }}
     >
-      <div className="flex items-center justify-between">
-        <Avatar initials={initials(customerName(c))} tone={medal ?? "var(--ink-3)"} size={34} />
+      <div className="relative">
+        <Avatar
+          initials={initials(customerName(c))}
+          name={customerName(c)}
+          tone={medal}
+          size={lead ? 52 : 42}
+        />
         <span
-          className="tnum flex size-5 items-center justify-center rounded-full text-[10px] font-500 text-white"
-          style={{ background: medal ?? "var(--ink-3)" }}
+          className="tnum absolute -bottom-1 left-1/2 flex size-5 -translate-x-1/2 items-center justify-center rounded-full text-[10px] font-500 text-white"
+          style={{ background: medal, border: "2px solid #ffffff" }}
         >
           {rank}
         </span>
       </div>
-      <div className="mt-2.5 truncate text-[13px] text-ink">{customerName(c)}</div>
-      <div className="tnum mt-1 text-[17px] font-500 text-ink">
-        {by === "visits" ? int(visitsOf(c)) : ils(lifetime(c))}
+      <div
+        className={`mt-3 w-full truncate ${lead ? "text-[13.5px] font-500" : "text-[12px]"} text-ink`}
+      >
+        {customerName(c)}
       </div>
-      <div className="tnum mt-0.5 text-[10.5px] text-ink-3">
-        {by === "visits"
-          ? "ביקורים"
-          : by === "tenure" && since
-            ? `מאז ${shortDate(since)}`
-            : visits(visitsOf(c))}
+      <div className={`tnum mt-1 font-500 text-ink ${lead ? "text-[18px]" : "text-[15px]"}`}>
+        {topValue(c, by)}
       </div>
+      <div className="tnum mt-0.5 text-[10px] text-ink-3">{topSub(c, by)}</div>
+    </Link>
+  );
+}
+
+/** מקום רביעי ומטה — שורות רגילות מתחת לפודיום. */
+function TopRow({ c, rank, by }: { c: Row; rank: number; by: By }) {
+  return (
+    <Link
+      to="/customers/$id"
+      params={{ id: custId(c) || customerName(c) }}
+      className="hairline tap flex items-center gap-3 py-2.5"
+    >
+      <span className="tnum w-5 shrink-0 text-center text-[11px] text-ink-3">{rank}</span>
+      <Avatar
+        initials={initials(customerName(c))}
+        name={customerName(c)}
+        tone="var(--v-tractor)"
+        size={32}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13.5px] text-ink">{customerName(c)}</div>
+        <div className="tnum mt-0.5 text-[10.5px] text-ink-3">{topSub(c, by)}</div>
+      </div>
+      <span className="tnum shrink-0 text-[13.5px] text-ink">{topValue(c, by)}</span>
     </Link>
   );
 }
