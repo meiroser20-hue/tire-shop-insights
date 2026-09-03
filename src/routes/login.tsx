@@ -4,7 +4,7 @@ import { IconLock } from "@tabler/icons-react";
 import { db } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { useRotating } from "@/lib/motion";
-import { LOGO_URL } from "@/lib/brand";
+import { LOGO_ON_DARK } from "@/lib/brand";
 import bg from "@/assets/login-bg.jpg.asset.json";
 
 export const Route = createFileRoute("/login")({
@@ -91,7 +91,7 @@ function Login() {
           }}
         >
           <img
-            src={LOGO_URL}
+            src={LOGO_ON_DARK}
             alt="ברכת הדרך"
             className="size-full object-contain p-3"
             loading="eager"
