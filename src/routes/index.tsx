@@ -8,6 +8,15 @@ import {
   IconCircleDot,
   IconTool,
   IconScale,
+  IconClockHour4,
+  IconChartDonut3,
+  IconTools,
+  IconTrophy,
+  IconAward,
+  IconRulerMeasure,
+  IconCoins,
+  IconStack2,
+  IconBulb,
 } from "@tabler/icons-react";
 import { AppShell, Page, ScreenHeader } from "@/components/AppShell";
 import {
@@ -82,6 +91,7 @@ const vehicleKeys = ["car_num", "vehicle_no", "vehicle_number", "car_number", "r
 const catKeys = ["category", "service_category", "cat"];
 const qtyKeys = ["quantity", "qty", "units", "tquant"];
 const sizeKeys = ["size", "tire_size", "measure"];
+const brandKeys = ["brand", "manufacturer", "maker", "brand_name"];
 
 const CLASS_COLORS: Record<string, string> = {
   משא: "var(--v-heavy)",
@@ -195,26 +205,37 @@ function Home() {
             />
           </div>
         ) : (
-          <div className="dashboard-grid">
+          <>
             <Metrics rows={rows} prevRows={prev.data ?? []} />
-            <HourlySection rows={hours.data ?? []} range={hoursRange} onRange={setHoursRange} />
-            <ClassSplit rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
-            <ServiceMix rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
-            <TopCustomers
-              rows={topCustomers.data ?? []}
-              range={topCustRange}
-              onRange={setTopCustRange}
-            />
-            <TopSizes rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
+
+            <div className="grid gap-x-6 lg:grid-cols-[2fr_1fr]">
+              <HourlySection rows={hours.data ?? []} range={hoursRange} onRange={setHoursRange} />
+              <ClassSplit rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
+            </div>
+
+            <div className="grid gap-x-6 lg:grid-cols-[1fr_1.35fr]">
+              <ServiceMix rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
+              <TopCustomers
+                rows={topCustomers.data ?? []}
+                range={topCustRange}
+                onRange={setTopCustRange}
+              />
+            </div>
+
+            <div className="grid gap-x-6 lg:grid-cols-2">
+              <TopBrands rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
+              <TopSizes rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
+            </div>
+
             <RecentVehicles rows={recent.data ?? []} range={recentRange} onRange={setRecentRange} />
-          </div>
+          </>
         )}
 
-        <div className="dashboard-grid">
+        <div className="grid gap-x-6 lg:grid-cols-2">
           <FinanceStrip />
           <StockStrip />
-          <Insights />
         </div>
+        <Insights />
         <div className="hairline flex items-center justify-center gap-1.5 py-6 text-[11px] text-ink-3">
           <IconRefresh size={13} stroke={1.5} />
           {lastSync || "מסתנכרן מפריוריטי כל 3 דקות"}
@@ -307,16 +328,12 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
 
 type RangeProps = { range: TimeKey; onRange: (range: TimeKey) => void };
 
-function RangePicker({ range, onRange }: RangeProps) {
-  return (
-    <div className="mb-4">
-      <TimeFilter
-        value={range}
-        onChange={onRange}
-        options={["today", "yesterday", "week", "month"]}
-      />
-    </div>
-  );
+function RangePicker({
+  range,
+  onRange,
+  options = ["today", "yesterday", "week", "month", "all"],
+}: RangeProps & { options?: TimeKey[] }) {
+  return <TimeFilter value={range} onChange={onRange} options={options} />;
 }
 
 function HourlySection({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
@@ -339,9 +356,17 @@ function HourlySection({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const quiet = data.reduce((a, b) => (b[1] < a[1] ? b : a));
 
   return (
-    <Section title="תנועה לפי שעה">
-      <RangePicker range={range} onRange={onRange} />
-      <ColumnChart data={data} valueFmt={(v) => ils(v)} />
+    <Section
+      title="תנועה לפי שעה"
+      icon={<IconClockHour4 size={15} stroke={1.6} />}
+      action={<RangePicker range={range} onRange={onRange} />}
+    >
+      <ColumnChart
+        data={data}
+        valueFmt={(v) => ils(v)}
+        labelOf={(k) => String(k).padStart(2, "0")}
+        subFmt={(k) => `${String(k).padStart(2, "0")}:00`}
+      />
       <p className="tnum mt-2 text-[11px] text-ink-3">
         שעת השיא {String(peak[0]).padStart(2, "0")}:00 · {String(quiet[0]).padStart(2, "0")}:00 שקטה
       </p>
@@ -377,8 +402,11 @@ function ClassSplit({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const vehicles = uniqueCount(rows, (r) => str(get(r, vehicleKeys))) || rows.length;
 
   return (
-    <Section title="כבד מול פרטי">
-      <RangePicker range={range} onRange={onRange} />
+    <Section
+      title="כבד מול פרטי"
+      icon={<IconChartDonut3 size={15} stroke={1.6} />}
+      action={<RangePicker range={range} onRange={onRange} />}
+    >
       <div className="flex items-center gap-5">
         <Donut
           slices={top.map((g, i) => ({ key: g.key, value: g.value, color: colorOf(g.key, i) }))}
@@ -430,16 +458,19 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   ];
 
   return (
-    <Section title="מה נמכר">
-      <RangePicker range={range} onRange={onRange} />
-      <div className="space-y-2.5">
+    <Section
+      title="פילוח שירותים"
+      icon={<IconTools size={15} stroke={1.6} />}
+      action={<RangePicker range={range} onRange={onRange} />}
+    >
+      <div className="space-y-3.5">
         {groups.map((g, i) => (
           <div key={g.key}>
             <div className="mb-1 flex items-center justify-between text-[12.5px]">
               <span className="text-ink">{g.key}</span>
               <AnimatedMoney value={g.value} className="text-ink-2" />
             </div>
-            <Bar value={g.value} max={max} color={tones[i % tones.length] ?? "var(--red-500)"} />
+            <Bar value={g.value} max={max} thin color={tones[i % tones.length] ?? "var(--red-500)"} />
           </div>
         ))}
       </div>
@@ -469,13 +500,16 @@ function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
       if (vehicle) item.vehicles.add(vehicle);
       grouped.set(name, item);
     }
-    return [...grouped.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 3);
+    return [...grouped.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 4);
   }, [rows, vat]);
   if (!top.length) return null;
 
   return (
-    <Section title="לקוחות מובילים">
-      <RangePicker range={range} onRange={onRange} />
+    <Section
+      title="לקוחות מובילים"
+      icon={<IconTrophy size={15} stroke={1.6} />}
+      action={<RangePicker range={range} onRange={onRange} />}
+    >
       <RankedList
         items={top.map(([name, item], i) => ({
           key: `${name}-${i}`,
@@ -485,6 +519,63 @@ function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
           sub: `${visits(item.visits.size)} · ${cars(item.vehicles.size)}`,
         }))}
       />
+    </Section>
+  );
+}
+
+/* ------------------------------ top brands ------------------------------ */
+
+function TopBrands({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
+  const { vat } = usePrefs();
+  const brands = useMemo(() => {
+    const withBrand = rows.filter((r) => str(get(r, brandKeys)));
+    const source = withBrand.length
+      ? withBrand
+      : rows.filter((r) => str(get(r, sizeKeys)) || str(r["part_des"]));
+    return groupSum(
+      source,
+      (r) => {
+        const explicit = str(get(r, brandKeys));
+        if (explicit) return explicit;
+        const des = str(r["part_des"]) || str(r["part_name"]);
+        const m = des.match(/[A-Za-z]{3,}/);
+        return m ? m[0] : "אחר";
+      },
+      (r) => amountOf(r, vat),
+    ).slice(0, 4);
+  }, [rows, vat]);
+
+  if (!brands.length) return null;
+
+  return (
+    <Section
+      title="מותגים מובילים"
+      icon={<IconAward size={15} stroke={1.6} />}
+      action={<RangePicker range={range} onRange={onRange} options={["week", "month", "all"]} />}
+    >
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        {brands.map((b, i) => (
+          <div
+            key={b.key}
+            className="tap rounded-[14px] px-3.5 py-3"
+            style={
+              i === 0
+                ? {
+                    background:
+                      "linear-gradient(135deg,rgba(196,43,78,.09) 0%,rgba(196,43,78,.02) 70%,#fff 100%)",
+                    border: "1px solid rgba(196,43,78,.11)",
+                  }
+                : { background: "var(--surf)" }
+            }
+          >
+            <div className="truncate text-[13.5px] font-500 text-ink">{b.key}</div>
+            <div className="tnum text-[10.5px] text-ink-3">{int(b.count)} יח׳</div>
+            <div className="tnum mt-1.5 text-[14px] font-500 text-ink">
+              <AnimatedMoney value={b.value} />
+            </div>
+          </div>
+        ))}
+      </div>
     </Section>
   );
 }
@@ -504,8 +595,11 @@ function TopSizes({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   );
   if (!sizes.length) return null;
   return (
-    <Section title="מידות מובילות">
-      <RangePicker range={range} onRange={onRange} />
+    <Section
+      title="מידות מובילות"
+      icon={<IconRulerMeasure size={15} stroke={1.6} />}
+      action={<RangePicker range={range} onRange={onRange} />}
+    >
       <VolumeChips
         items={sizes.map((s) => ({
           key: s.key,
@@ -521,7 +615,8 @@ function TopSizes({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
 
 function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
-  const recent = rows.slice(0, 8);
+  const [shown, setShown] = useState(5);
+  const recent = rows.slice(0, shown);
   const counts = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of rows) {
@@ -532,8 +627,17 @@ function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) 
   }, [rows]);
 
   return (
-    <Section title="רכבים אחרונים">
-      <RangePicker range={range} onRange={onRange} />
+    <Section
+      title="רכבים אחרונים"
+      icon={<IconCar size={15} stroke={1.6} />}
+      action={
+        <RangePicker
+          range={range}
+          onRange={onRange}
+          options={["today", "yesterday", "week"]}
+        />
+      }
+    >
       <Timeline
         items={recent.map((r, i) => {
           const name = customerName(r);
@@ -563,6 +667,14 @@ function RecentVehicles({ rows, range, onRange }: { rows: Row[] } & RangeProps) 
           };
         })}
       />
+      {rows.length > shown && (
+        <button
+          onClick={() => setShown((n) => n + 10)}
+          className="tap mt-4 w-full rounded-[12px] border border-dashed border-line py-2.5 text-[12px] text-ink-2 hover:border-solid hover:bg-surf"
+        >
+          הצג עוד 10 רכבים
+        </button>
+      )}
     </Section>
   );
 }
@@ -589,38 +701,39 @@ function FinanceStrip() {
   const future = rows.reduce((s, r) => s + num(get(r, ["future"])), 0);
 
   return (
-    <Section title="כספים">
-      <RangePicker range={financeRange} onRange={setFinanceRange} />
-      <div className="grid grid-cols-3 gap-2.5">
+    <Section
+      title="כספים"
+      icon={<IconCoins size={15} stroke={1.6} />}
+      action={<RangePicker range={financeRange} onRange={setFinanceRange} />}
+    >
+      <div className="grid grid-cols-2 gap-2.5">
         <ColorCard
           label="חייבים לי"
           value={ils(openSum)}
           numericValue={openSum}
-          bg="var(--teal-bg)"
-          fg="var(--teal-fg)"
-          className="col-span-2 row-span-2 flex flex-col justify-center"
+          bg="#3E8E72"
+          fg="#276A54"
         />
         <ColorCard
           label="בפיגור"
           value={ils(overdue)}
           numericValue={overdue}
-          bg="var(--red-100)"
-          fg="var(--red-700)"
+          bg="#C4444B"
+          fg="#9A3239"
         />
         <ColorCard
           label="עד 30 יום"
           value={ils(soon)}
           numericValue={soon}
-          bg="var(--amber-bg)"
-          fg="var(--amber-fg)"
+          bg="#C08A2E"
+          fg="#8A6119"
         />
         <ColorCard
           label="עתידי"
           value={ils(future)}
           numericValue={future}
-          bg="var(--blue-bg)"
-          fg="var(--blue-fg)"
-          className="col-span-3"
+          bg="#4F9E86"
+          fg="#2F7A61"
         />
       </div>
     </Section>
@@ -651,7 +764,7 @@ function StockStrip() {
   const dead = stockRows.filter((r) => num(get(r, ["days_since_move"])) >= 90);
 
   return (
-    <Section title="מלאי">
+    <Section title="מלאי" icon={<IconStack2 size={15} stroke={1.6} />}>
       <div className="grid grid-cols-3 gap-2.5">
         <Gauge
           value={soon.length}
@@ -686,7 +799,7 @@ function Insights() {
   const rows = q.data ?? [];
   if (!rows.length) return null;
   return (
-    <Section title="תובנות">
+    <Section title="תובנות" icon={<IconBulb size={15} stroke={1.6} />}>
       <div className="space-y-2">
         {rows.map((r, i) => (
           <Quote key={i}>{str(get(r, ["insight", "text", "message", "title"]))}</Quote>
