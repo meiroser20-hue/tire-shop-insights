@@ -31,7 +31,7 @@ import {
   ErrorState,
   Gauge,
   GlassMetric,
-  Leaderboard,
+  RankedList,
   Pill,
   Plate,
   Quote,
@@ -418,27 +418,27 @@ function HourlySection({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
     }
     return [...m.entries()]
       .sort((a, b) => a[0] - b[0])
-      .map(([h, x]) => [h, x.value, x.docs.size] as [number, number, number]);
+      .map(([h, x]) => ({ hour: h, value: x.value, count: x.docs.size }));
   }, [rows, vat]);
 
   if (!data.length) return null;
 
-  const peak = data.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const quiet = data.reduce((a, b) => (b[1] < a[1] ? b : a));
+  const peak = data.reduce((a, b) => (b.value > a.value ? b : a));
+  const quiet = data.reduce((a, b) => (b.value < a.value ? b : a));
   const hh = (k: string | number) => String(k).padStart(2, "0");
+  const counts = new Map(data.map((d) => [d.hour, d.count]));
 
   return (
     <Section title="תנועה לפי שעה" icon={IconClock}>
       <RangePicker range={range} onRange={onRange} />
       <ColumnChart
-        data={data}
-        labelOf={(k) => `${hh(k)}:00`}
-        axisOf={(k) => hh(k)}
+        data={data.map((d) => [d.hour, d.value] as [number, number])}
+        labelOf={(k) => hh(k)}
         valueFmt={(v) => ils(v)}
-        subFmt={(c) => visits(c)}
+        subFmt={(k) => `${hh(k)}:00 · ${visits(counts.get(Number(k)) ?? 0)}`}
       />
       <p className="tnum mt-2 text-[11px] text-ink-3">
-        שעת השיא {hh(peak[0])}:00 · {hh(quiet[0])}:00 שקטה
+        שעת השיא {hh(peak.hour)}:00 · {hh(quiet.hour)}:00 שקטה
       </p>
     </Section>
   );
@@ -543,7 +543,7 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
             <Bar
               value={g.value}
               max={max}
-              height={5}
+              thin
               color={tones[i % tones.length] ?? "var(--red-500)"}
             />
           </div>
@@ -582,11 +582,12 @@ function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   return (
     <Section title="לקוחות מובילים" icon={IconTrophy}>
       <RangePicker range={range} onRange={onRange} />
-      <Leaderboard
+      <RankedList
         items={top.map(([name, item], i) => ({
           key: `${name}-${i}`,
-          name,
+          label: name,
           value: item.value,
+          valueText: ils(item.value),
           sub: `${visits(item.visits.size)} · ${cars(item.vehicles.size)}`,
         }))}
       />
