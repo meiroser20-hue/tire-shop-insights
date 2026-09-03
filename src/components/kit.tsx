@@ -329,6 +329,7 @@ export function ColorCard({
   label: string;
   value: string;
   sub?: string;
+  /** rgb triplet, e.g. "62,142,114" */
   bg: string;
   fg: string;
   className?: string;
@@ -337,21 +338,17 @@ export function ColorCard({
   const animated = useCountUp(numericValue ?? 0);
   const grad = bg.includes("gradient")
     ? bg
-    : `linear-gradient(150deg, color-mix(in srgb, ${bg} 92%, transparent) 0%, color-mix(in srgb, ${bg} 34%, white) 45%, #ffffff 90%)`;
+    : `linear-gradient(150deg, rgba(${bg},.15) 0%, rgba(${bg},.05) 45%, rgba(255,255,255,1) 90%)`;
   return (
     <div
-      className={`tap rounded-[16px] px-3.5 py-3 ${className}`}
-      style={{
-        background: grad,
-        color: fg,
-        border: `1px solid color-mix(in srgb, ${fg} 16%, transparent)`,
-      }}
+      className={`tap rounded-[16px] px-4 py-3.5 ${className}`}
+      style={{ background: grad, color: fg }}
     >
       <div className="text-[11px] opacity-85">{label}</div>
-      <div className="tnum mt-1 text-[22px] font-500 leading-none">
+      <div className="tnum mt-1.5 text-[22px] font-500 leading-none">
         {numericValue === undefined ? value : ils(animated)}
       </div>
-      {sub && <div className="tnum mt-1 text-[10.5px] opacity-70">{sub}</div>}
+      {sub && <div className="tnum mt-1.5 text-[10.5px] opacity-70">{sub}</div>}
     </div>
   );
 }
