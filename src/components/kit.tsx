@@ -475,7 +475,7 @@ export function RankedList({
   return (
     <div className="space-y-3">
       {items.map((it, i) => (
-        <RankedItem key={it.key} item={it} index={i} max={max} medal={medals[i]} />
+        <RankedItem key={it.key} item={it} index={i} max={max} medal={medals[i] ?? "var(--ink-3)"} />
       ))}
     </div>
   );
@@ -490,7 +490,7 @@ function RankedItem({
   item: { key: string; label: ReactNode; value: number; valueText: string; sub?: string };
   index: number;
   max: number;
-  medal?: string;
+  medal: string;
 }) {
   const animated = useCountUp(item.value);
   return (
