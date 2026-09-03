@@ -37,7 +37,7 @@ export const Route = createFileRoute("/sales")({
   ),
 });
 
-const vehicleKeys = ["vehicle_no", "vehicle_number", "car_number", "regnum"];
+const vehicleKeys = ["car_num", "vehicle_no", "vehicle_number", "car_number", "regnum"];
 const serviceKeys = ["service", "service_name", "pdes", "description"];
 
 type SplitBy = "class" | "service" | "brand" | "size";

@@ -160,7 +160,7 @@ function CustomerCard() {
                 {myVehicles.map((v, i) => (
                   <div key={i} className="bg-white px-3 py-2.5">
                     <div className="tnum text-[14px] text-ink" dir="ltr">
-                      {str(get(v, ["vehicle_no", "vehicle_number", "regnum"]))}
+                      {str(get(v, ["car_num", "vehicle_no", "vehicle_number", "regnum"]))}
                     </div>
                     <div className="tnum text-[11px] text-ink-3">
                       {int(num(get(v, ["treatments", "visits", "services"])))} טיפולים · אחרון{" "}

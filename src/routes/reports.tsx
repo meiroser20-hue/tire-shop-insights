@@ -50,7 +50,7 @@ function Reports() {
           rows.map((r) => ({
             תאריך: shortDate(get(r, ["doc_date", "date", "created_at"])),
             לקוח: customerName(r),
-            רכב: str(get(r, ["vehicle_no", "vehicle_number", "regnum"])),
+            רכב: str(get(r, ["car_num", "vehicle_no", "vehicle_number", "regnum"])),
             שירות: str(get(r, ["service", "pdes", "description"])),
             סכום: amountOf(r, vat),
           })),

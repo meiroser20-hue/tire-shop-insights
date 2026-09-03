@@ -55,7 +55,7 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-const vehicleKeys = ["vehicle_no", "vehicle_number", "car_number", "license", "regnum"];
+const vehicleKeys = ["car_num", "vehicle_no", "vehicle_number", "car_number", "regnum"];
 const catKeys = ["category", "service_category", "cat"];
 const qtyKeys = ["quantity", "qty", "units", "tquant"];
 const sizeKeys = ["size", "tire_size", "measure"];
@@ -67,7 +67,7 @@ function Home() {
 
   const sales = useView("v_sales", time, { limit: 5000 });
   const prev = usePrevView("v_sales", time);
-  const sync = useView("sync_log", null, { limit: 1 });
+  const sync = useView("sync_log", null, { limit: 1, order: { key: ["finished_at", "started_at"] } });
 
   const rows = sales.data ?? [];
   const total = useMemo(() => rows.reduce((s, r) => s + amountOf(r, vat), 0), [rows, vat]);
@@ -130,9 +130,9 @@ function Home() {
         ) : (
           <>
             <Metrics rows={rows} prevRows={prev.data ?? []} />
-            <HourlySection time={time} />
+            <HourlySection rows={rows} />
             <ClassSplit rows={rows} />
-            <ServiceMix time={time} />
+            <ServiceMix rows={rows} />
             <TopCustomers />
             <TopSizes rows={rows} />
             <RecentVehicles rows={rows} />
@@ -162,7 +162,11 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
   const vehicles = veh(rows) || rows.length;
   const catQty = (needle: string, rs = rows) =>
     rs
-      .filter((r) => str(get(r, catKeys)).includes(needle) || str(get(r, ["service", "description", "pdes"])).includes(needle))
+      .filter((r) =>
+        [str(get(r, catKeys)), str(r["family_desc"]), str(r["family_name"]), str(r["part_des"])]
+          .join(" ")
+          .includes(needle),
+      )
       .reduce((s, r) => s + (num(get(r, qtyKeys)) || 1), 0);
 
   return (
@@ -195,20 +199,20 @@ function Metrics({ rows, prevRows }: { rows: Row[]; prevRows: Row[] }) {
 
 /* -------------------------------- hourly -------------------------------- */
 
-function HourlySection({ time }: { time: TimeKey }) {
+function HourlySection({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
-  const q = useView("v_sales_by_hour", time, { limit: 500 });
   const data = useMemo(() => {
-    const rows = q.data ?? [];
     const m = new Map<number, number>();
     for (const r of rows) {
-      const h = num(get(r, ["hour", "hour_of_day", "hr"]));
+      const raw = get(r, ["signed_at", "doc_time", "created_at"]);
+      const d = raw ? new Date(str(raw)) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      const h = d.getHours();
       m.set(h, (m.get(h) ?? 0) + amountOf(r, vat));
     }
     return [...m.entries()].sort((a, b) => a[0] - b[0]);
-  }, [q.data, vat]);
+  }, [rows, vat]);
 
-  if (q.isLoading) return <Section title="תנועה לפי שעה"><Skeleton className="h-28 w-full rounded-[14px]" /></Section>;
   if (!data.length) return null;
 
   const max = Math.max(...data.map((d) => d[1]));
@@ -246,9 +250,11 @@ function HourlySection({ time }: { time: TimeKey }) {
 function ClassSplit({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
   const groups = useMemo(
-    () => groupSum(rows, (r) => str(get(r, ["vehicle_class", "vehicletype"])) || "אחר", (r) => amountOf(r, vat)),
+    () => groupSum(rows, (r) => str(r["vehicle_class"]) || "אחר", (r) => amountOf(r, vat)),
     [rows, vat],
   );
+  const carsIn = (cls: string) =>
+    uniqueCount(rows.filter((r) => (str(r["vehicle_class"]) || "אחר") === cls), (r) => str(get(r, vehicleKeys)));
   const total = groups.reduce((s, g) => s + g.value, 0);
   if (!groups.length || !total) return null;
 
@@ -284,7 +290,7 @@ function ClassSplit({ rows }: { rows: Row[] }) {
               <span className="size-2.5 shrink-0 rounded-full" style={{ background: colors[i] }} />
               <span className="min-w-0 flex-1 truncate text-ink">{g.key}</span>
               <span className="tnum text-ink-3">{Math.round((g.value / total) * 100)}%</span>
-              <span className="tnum text-ink-2">{g.count} רכבים</span>
+              <span className="tnum text-ink-2">{carsIn(g.key)} רכבים</span>
             </div>
           ))}
         </div>
@@ -295,19 +301,17 @@ function ClassSplit({ rows }: { rows: Row[] }) {
 
 /* ----------------------------- service mix ------------------------------ */
 
-function ServiceMix({ time }: { time: TimeKey }) {
+function ServiceMix({ rows }: { rows: Row[] }) {
   const { vat } = usePrefs();
-  const q = useView("v_service_mix", time, { limit: 500 });
   const groups = useMemo(
     () =>
       groupSum(
-        q.data ?? [],
-        (r) => str(get(r, ["service", "service_name", "category", "pdes"])) || "אחר",
+        rows,
+        (r) => [str(r["category"]), str(r["family_desc"])].filter(Boolean).join(" · ") || "אחר",
         (r) => amountOf(r, vat),
       ).slice(0, 6),
-    [q.data, vat],
+    [rows, vat],
   );
-  if (q.isLoading) return <Section title="מה נמכר"><SkeletonBlock rows={3} /></Section>;
   if (!groups.length) return null;
   const max = groups[0]?.value ?? 0;
 
@@ -430,7 +434,7 @@ function RecentVehicles({ rows }: { rows: Row[] }) {
                   )}
                 </div>
                 <div className="tnum truncate text-[11px] text-ink-3">
-                  {[timeOf(get(r, ["created_at", "doc_time", "doc_date"])), str(get(r, vehicleKeys)), str(get(r, ["service", "description", "pdes", "category"]))]
+                  {[timeOf(get(r, ["signed_at", "doc_time", "doc_date"])), str(get(r, vehicleKeys)), str(get(r, ["family_desc", "category", "part_des"]))]
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
