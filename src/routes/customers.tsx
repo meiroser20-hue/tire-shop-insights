@@ -101,7 +101,9 @@ function Customers() {
   );
   const hierarchy = useMemo(() => {
     const parentOf = (c: Row) =>
-      str(get(c, ["parent_customer", "parent_name", "group_name", "chain_name", "parent_cust_name"]));
+      str(
+        get(c, ["parent_customer", "parent_name", "group_name", "chain_name", "parent_cust_name"]),
+      );
     const groups = new Map<string, Row[]>();
     for (const customer of all) {
       const parent = parentOf(customer);

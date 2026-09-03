@@ -52,7 +52,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
       <DesktopNav />
-      <main className="app-surface min-h-screen min-w-0 pb-28 lg:mr-[252px] lg:pb-10">{children}</main>
+      <main className="app-surface min-h-screen min-w-0 pb-28 lg:mr-[252px] lg:pb-10">
+        {children}
+      </main>
       <MobileNav />
     </div>
   );
@@ -82,10 +84,7 @@ export function ScreenHeader({
             {subtitle && <div className="mt-1 text-[11px] text-ink-3">{subtitle}</div>}
           </div>
           <div className="relative flex items-center gap-1">
-            <button
-              className="rounded-full p-2 text-ink-2 hover:bg-white/60"
-              aria-label="התראות"
-            >
+            <button className="rounded-full p-2 text-ink-2 hover:bg-white/60" aria-label="התראות">
               <IconBell size={19} stroke={1.5} />
             </button>
             <button
@@ -232,10 +231,10 @@ function MobileNav() {
           })}
           <button
             onClick={() => setMore((m) => !m)}
-              className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-[260ms] ease-[cubic-bezier(.34,1.4,.64,1)] ${
-                rest.some((r) => isActive(r.to))
-                  ? "red-grad w-20 text-white"
-                  : "w-[52px] text-[#8E9199]"
+            className={`flex h-11 flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-[260ms] ease-[cubic-bezier(.34,1.4,.64,1)] ${
+              rest.some((r) => isActive(r.to))
+                ? "red-grad w-20 text-white"
+                : "w-[52px] text-[#8E9199]"
             }`}
           >
             <IconDotsCircleHorizontal size={18} stroke={1.5} />

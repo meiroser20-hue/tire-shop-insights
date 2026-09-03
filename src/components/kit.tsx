@@ -451,7 +451,9 @@ export function Donut({
   return (
     <div
       key={stops}
-      title={slices.map((slice) => `${slice.key}: ${Math.round((slice.value / total) * 100)}%`).join(" · ")}
+      title={slices
+        .map((slice) => `${slice.key}: ${Math.round((slice.value / total) * 100)}%`)
+        .join(" · ")}
       className="donut-turn relative size-28 shrink-0 rounded-full transition-all duration-[400ms] ease-[cubic-bezier(.22,1,.36,1)]"
       style={{ background: `conic-gradient(${stops})` }}
     >
@@ -476,7 +478,13 @@ export function RankedList({
   return (
     <div className="space-y-3">
       {items.map((it, i) => (
-        <RankedItem key={it.key} item={it} index={i} max={max} medal={medals[i] ?? "var(--ink-3)"} />
+        <RankedItem
+          key={it.key}
+          item={it}
+          index={i}
+          max={max}
+          medal={medals[i] ?? "var(--ink-3)"}
+        />
       ))}
     </div>
   );
@@ -495,24 +503,24 @@ function RankedItem({
 }) {
   const animated = useCountUp(item.value);
   return (
-        <div className="flex items-center gap-3">
-          <span
-            className="tnum flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-500 text-white"
-            style={{ background: medal ?? "var(--ink-3)" }}
-          >
-            {index + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate text-[14px] text-ink">{item.label}</span>
-              <span className="tnum shrink-0 text-[13px] text-ink-2">{ils(animated)}</span>
-            </div>
-            <div className="mt-1.5">
-              <Bar value={item.value} max={max} />
-            </div>
-            {item.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{item.sub}</div>}
-          </div>
+    <div className="flex items-center gap-3">
+      <span
+        className="tnum flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-500 text-white"
+        style={{ background: medal ?? "var(--ink-3)" }}
+      >
+        {index + 1}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[14px] text-ink">{item.label}</span>
+          <span className="tnum shrink-0 text-[13px] text-ink-2">{ils(animated)}</span>
         </div>
+        <div className="mt-1.5">
+          <Bar value={item.value} max={max} />
+        </div>
+        {item.sub && <div className="tnum mt-1 text-[10.5px] text-ink-3">{item.sub}</div>}
+      </div>
+    </div>
   );
 }
 

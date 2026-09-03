@@ -191,7 +191,7 @@ function Home() {
           <div className="py-6">
             <EmptyState
               text="עוד לא נרשמו רכבים היום"
-               action={<Pill onClick={() => setSalesRange("yesterday")}>הצג את אתמול</Pill>}
+              action={<Pill onClick={() => setSalesRange("yesterday")}>הצג את אתמול</Pill>}
             />
           </div>
         ) : (
@@ -200,7 +200,11 @@ function Home() {
             <HourlySection rows={hours.data ?? []} range={hoursRange} onRange={setHoursRange} />
             <ClassSplit rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
             <ServiceMix rows={mix.data ?? []} range={mixRange} onRange={setMixRange} />
-            <TopCustomers rows={topCustomers.data ?? []} range={topCustRange} onRange={setTopCustRange} />
+            <TopCustomers
+              rows={topCustomers.data ?? []}
+              range={topCustRange}
+              onRange={setTopCustRange}
+            />
             <TopSizes rows={sizes.data ?? []} range={sizesRange} onRange={setSizesRange} />
             <RecentVehicles rows={recent.data ?? []} range={recentRange} onRange={setRecentRange} />
           </div>
@@ -446,10 +450,17 @@ function ServiceMix({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
 function TopCustomers({ rows, range, onRange }: { rows: Row[] } & RangeProps) {
   const { vat } = usePrefs();
   const top = useMemo(() => {
-    const grouped = new Map<string, { value: number; visits: Set<string>; vehicles: Set<string> }>();
+    const grouped = new Map<
+      string,
+      { value: number; visits: Set<string>; vehicles: Set<string> }
+    >();
     for (const row of rows) {
       const name = customerName(row);
-      const item = grouped.get(name) ?? { value: 0, visits: new Set<string>(), vehicles: new Set<string>() };
+      const item = grouped.get(name) ?? {
+        value: 0,
+        visits: new Set<string>(),
+        vehicles: new Set<string>(),
+      };
       item.value += amountOf(row, vat);
       item.visits.add(str(get(row, ["doc_no", "document_no"])) || String(item.visits.size));
       const vehicle = str(get(row, vehicleKeys));
@@ -586,8 +597,20 @@ function FinanceStrip() {
           fg="var(--teal-fg)"
           className="col-span-2 row-span-2 flex flex-col justify-center"
         />
-        <ColorCard label="בפיגור" value={ils(overdue)} numericValue={overdue} bg="var(--red-100)" fg="var(--red-700)" />
-        <ColorCard label="עד 30 יום" value={ils(soon)} numericValue={soon} bg="var(--amber-bg)" fg="var(--amber-fg)" />
+        <ColorCard
+          label="בפיגור"
+          value={ils(overdue)}
+          numericValue={overdue}
+          bg="var(--red-100)"
+          fg="var(--red-700)"
+        />
+        <ColorCard
+          label="עד 30 יום"
+          value={ils(soon)}
+          numericValue={soon}
+          bg="var(--amber-bg)"
+          fg="var(--amber-fg)"
+        />
         <ColorCard
           label="עתידי"
           value={ils(future)}
