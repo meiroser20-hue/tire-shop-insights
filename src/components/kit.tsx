@@ -513,7 +513,7 @@ export function ColumnChart({
                   opacity: active !== null && !on ? 0.35 : 1,
                 }}
               />
-              {on && (
+              {active === i && (
                 <div className="pointer-events-none absolute bottom-[calc(100%+10px)] right-1/2 z-20 translate-x-1/2 whitespace-nowrap rounded-[10px] bg-[rgba(22,23,27,.94)] px-3 py-1.5">
                   <span className="tnum block text-[12px] font-500 text-white">
                     {valueFmt?.(v) ?? int(v)}
