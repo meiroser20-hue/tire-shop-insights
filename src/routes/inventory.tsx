@@ -101,6 +101,7 @@ function Inventory() {
   const [sortBy, setSortBy] = useState<SortBy>("balance");
   const [openMenu, setOpenMenu] = useState<"family" | "brand" | "sort" | null>(null);
   const [orderDays, setOrderDays] = useState(7);
+  const [showAll, setShowAll] = useState(false);
 
   const fMap = useMemo(() => {
     const m = new Map<string, Row>();
@@ -502,7 +503,7 @@ function Inventory() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.slice(0, 150).map((r, i) => {
+                      {(showAll ? rows : rows.slice(0, 10)).map((r, i) => {
                         const bal = num(get(r, balK));
                         const f = fMap.get(itemKey(r));
                         const days = f ? num(get(f, daysK)) : 0;
@@ -581,6 +582,15 @@ function Inventory() {
                     </tbody>
                   </table>
                 </div>
+              )}
+
+              {rows.length > 10 && (
+                <button
+                  onClick={() => setShowAll((v) => !v)}
+                  className="tap mt-4 w-full rounded-[12px] border border-dashed border-line py-2.5 text-[12px] text-ink-2 hover:border-solid hover:bg-surf"
+                >
+                  {showAll ? "הצג פחות" : `הצג את כל ${int(rows.length)} הפריטים`}
+                </button>
               )}
             </Section>
 
