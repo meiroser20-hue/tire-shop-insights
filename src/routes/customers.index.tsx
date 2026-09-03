@@ -48,6 +48,8 @@ export const Route = createFileRoute("/customers/")({
 const lastVisitOf = (c: Row) =>
   get(c, ["last_visit", "last_seen", "last_doc_date", "last_visit_date", "last_activity"]);
 const isDormant = (c: Row) => get(c, ["is_dormant"]) === true;
+/** לקוח שקיים בפריוריטי אבל עוד לא ביצע רכישה. */
+const neverVisited = (c: Row) => visitsOf(c) === 0;
 
 /** ימים מאז תאריך. מחזיר null כשאין תאריך — לא ממציאים מספר. */
 function daysSince(v: unknown): number | null {
@@ -57,7 +59,7 @@ function daysSince(v: unknown): number | null {
   return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
 }
 
-type Filter = "all" | "business" | "private" | "repeat" | "debt" | "lost";
+type Filter = "all" | "business" | "private" | "repeat" | "debt" | "lost" | "new";
 const FILTERS: Array<{ v: Filter; l: string }> = [
   { v: "all", l: "הכל" },
   { v: "business", l: "עסקי" },
@@ -65,12 +67,13 @@ const FILTERS: Array<{ v: Filter; l: string }> = [
   { v: "repeat", l: "חוזר" },
   { v: "debt", l: "חייב" },
   { v: "lost", l: "לא חזר" },
+  { v: "new", l: "טרם ביקרו" },
 ];
 
 type SortKey = "revenue" | "visits" | "recent";
 
 function Customers() {
-  const q = useView("v_customers_unified", null, { limit: 3000 });
+  const q = useView("v_customers_full", null, { limit: 3000 });
   const [term, setTerm] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<SortKey>("revenue");
@@ -97,6 +100,7 @@ function Customers() {
     if (filter === "repeat") list = list.filter((c) => visitsOf(c) >= 2);
     if (filter === "debt") list = list.filter((c) => debtOf(c) > 0);
     if (filter === "lost") list = list.filter(isDormant);
+    if (filter === "new") list = list.filter(neverVisited);
     const t = term.trim();
     if (t)
       list = list.filter((c) =>
@@ -388,7 +392,14 @@ function CustomerRow({ c }: { c: Row }) {
   const debt = debtOf(c);
   const days = daysSince(lastVisitOf(c));
   const dormant = isDormant(c);
-  const tone = debt > 0 ? "var(--red-600)" : dormant ? "var(--v-commercial)" : "var(--v-tractor)";
+  const fresh = neverVisited(c);
+  const tone = fresh
+    ? "var(--ink-3)"
+    : debt > 0
+      ? "var(--red-600)"
+      : dormant
+        ? "var(--v-commercial)"
+        : "var(--v-tractor)";
 
   return (
     <Link
@@ -405,7 +416,12 @@ function CustomerRow({ c }: { c: Row }) {
               עסקי
             </span>
           )}
-          {dormant && (
+          {fresh && (
+            <span className="shrink-0 rounded-full bg-[#F4F4F6] px-1.5 py-0.5 text-[9.5px] text-ink-3">
+              טרם ביקר
+            </span>
+          )}
+          {!fresh && dormant && (
             <span
               className="shrink-0 rounded-full px-1.5 py-0.5 text-[9.5px]"
               style={{ background: "rgba(180,115,75,.12)", color: "var(--v-commercial)" }}
@@ -415,12 +431,14 @@ function CustomerRow({ c }: { c: Row }) {
           )}
         </div>
         <div className="tnum mt-0.5 text-[11px] text-ink-3">
-          {visits(visitsOf(c))}
-          {days !== null && ` · לפני ${int(days)} ימים`}
+          {fresh ? "טרם ביקר" : visits(visitsOf(c))}
+          {!fresh && days !== null && ` · לפני ${int(days)} ימים`}
         </div>
       </div>
       <div className="shrink-0 text-left">
-        <div className="tnum text-[14px] text-ink">{ils(lifetime(c))}</div>
+        <div className={`tnum text-[14px] ${fresh ? "text-ink-3" : "text-ink"}`}>
+          {fresh ? "—" : ils(lifetime(c))}
+        </div>
         {debt > 0 && <div className="tnum text-[10.5px] text-red-600">חוב {ils(debt)}</div>}
       </div>
       <IconChevronLeft size={16} stroke={1.5} className="shrink-0 text-ink-3" />
