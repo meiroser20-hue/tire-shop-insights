@@ -99,6 +99,17 @@ function Customers() {
     () => all.filter((c) => get(c, ["is_dormant"]) === true && visitsOf(c) >= 2).slice(0, 20),
     [all],
   );
+  const hierarchy = useMemo(() => {
+    const parentOf = (c: Row) =>
+      str(get(c, ["parent_customer", "parent_name", "group_name", "chain_name", "parent_cust_name"]));
+    const groups = new Map<string, Row[]>();
+    for (const customer of all) {
+      const parent = parentOf(customer);
+      if (!parent) continue;
+      groups.set(parent, [...(groups.get(parent) ?? []), customer]);
+    }
+    return [...groups.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 12);
+  }, [all]);
 
   return (
     <>
@@ -162,6 +173,34 @@ function Customers() {
                 </div>
               )}
             </Section>
+
+            {hierarchy.length > 0 && (
+              <Section title="קבוצות וענפים">
+                <div className="space-y-3">
+                  {hierarchy.map(([parent, children]) => (
+                    <div key={parent} className="rounded-[8px] border border-line bg-white p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[14px] font-600 text-ink">{parent}</span>
+                        <span className="tnum text-[11px] text-ink-3">{children.length} ענפים</span>
+                      </div>
+                      <div className="mt-2 border-r border-line pr-3">
+                        {children.map((child, index) => (
+                          <Link
+                            key={`${custId(child)}-${index}`}
+                            to="/customers/$id"
+                            params={{ id: custId(child) || customerName(child) }}
+                            className="flex min-h-9 items-center justify-between gap-3 border-b border-line/70 py-2 text-[12.5px] last:border-0 hover:text-red-700"
+                          >
+                            <span className="truncate">{customerName(child)}</span>
+                            <span className="tnum shrink-0 text-ink-3">{ils(lifetime(child))}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
 
             <Section
               title="לקוחות מובילים"
